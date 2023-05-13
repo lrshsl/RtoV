@@ -33,8 +33,8 @@ def main():
     model.fit(train_data.images, train_data.labels, epochs=7)
     # Evaluate the model
     test_loss, test_acc = model.evaluate(test_data.images, test_data.labels)
-    cout << "Test loss: " << test_loss << endl;
-    cout << "Test accuracy: " << test_acc << endl;
+    cout << 'Test loss: ' << test_loss << endl;
+    cout << 'Test accuracy: ' << test_acc << endl;
 
 if __name__ == '__main__':
     main()
