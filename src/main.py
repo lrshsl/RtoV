@@ -1,3 +1,4 @@
+import stage0.main as stage0
 import stage1.main as stage1
 import stage2.main as stage2
 from argparse import ArgumentParser
@@ -5,7 +6,7 @@ from argparse import ArgumentParser
 from std.io import cout, endl
 
 
-STAGES = [stage1, stage2];
+STAGES = [stage0, stage1, stage2];
 
 def main() -> None:
     # Create the argument parser
