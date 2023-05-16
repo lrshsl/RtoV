@@ -38,7 +38,7 @@ class ImageGenerator:
     @staticmethod
     def get_image_array(r, g, b):
         png_data = svg2png(
-            svg_code.format(r=r, g=g, b=b),
+            svg_code.format(r=r, g=g, b=b)
         );
         rgb_data = Image.open(io.BytesIO(png_data));
         return np.array(rgb_data);
