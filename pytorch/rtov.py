@@ -9,6 +9,7 @@ Original file is located at
 
 import cv2
 cv2_imshow = lambda img: cv2.imshow('', img)
+import matplotlib.pyplot as plt
 import numpy as np
 
 from enum import IntEnum, auto
@@ -145,7 +146,7 @@ class MainModel(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (16, 50, 50)
             nn.Conv2d(in_channels=16, out_channels=32,
-                      kernel_size=5, stride=1, padding=2),
+                      kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (32, 25, 25)
             ) # Output shape: (32, 25, 25)
@@ -226,22 +227,26 @@ model = MainModel(img_dim=Vec3(100, 100, 3), batch_size=32)
 
 # Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
+optimizer = optim.Adam(model.parameters(), lr=0.0005)
+num_epochs = 4
 
 # Data generation and preprocessing
 train_dataset = LazyDataset(
     img_dim = Vec3(100, 100, 3),
-    num_samples = 20 * 32,
+    num_samples = 50 * 32,
     transform = transform_fn,
 )
 dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
+train_losses = np.zeros(num_epochs * len(dataloader))
+train_accuracies = np.zeros(num_epochs * len(dataloader))
+
 # Training loop
-num_epochs = 3
 for epoch in range(num_epochs):
     running_loss = 0.0
-    for inputs, labels in dataloader:
-        optimizer.zero_grad()  # Zero the parameter gradients
+    for i, (inputs, labels) in enumerate(dataloader):
+        # Zero the parameter gradients
+        optimizer.zero_grad()
 
         # Forward pass
         outputs = model(inputs)
@@ -253,18 +258,38 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-        running_loss += loss.item()
+        loss = loss.item()
+        running_loss += loss
+        train_losses[epoch * len(dataloader) + i] = loss
+        # train_accuracies[epoch * len(dataloader) + i] = optimizer.state_dict()
 
     # Print loss at the end of each epoch
     print(f'Epoch {epoch+1}/{num_epochs}, Loss: {running_loss / len(dataloader)}')
 
-# Save the trained model if needed
+# Save the trained model
 torch.save(model.state_dict(), 'trained_model.pth')
+
+
+# Plot loss curves
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+plt.plot(train_losses, label="Train")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.legend()
+
+# Plot accuracy curves
+# plt.subplot(1, 2, 2)
+# plt.plot(train_accuracies, label="Train")
+# plt.xlabel("Epoch")
+# plt.ylabel("Accuracy")
+# plt.legend()
+
+plt.show()
 
 # }}}
 
 # Visualization {{{
-import matplotlib.pyplot as plt
 rows, cols = 3, 3
 
 model.eval()
@@ -295,6 +320,7 @@ for i in range (cols * rows):
     # Display the image and prediction
     ax.imshow(img)
     ax.set_title(f'{label} -> {pred}')
+    print(f'{label} -> {predictions[-1]}')
 
 plt.tight_layout()
 plt.show()
