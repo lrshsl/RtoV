@@ -138,45 +138,57 @@ from torch import nn
 from torchvision import transforms
 
 class MainModel(nn.Module):
-    def __init__(self, img_dim: Vec3, batch_size: int = 32) -> None:
+    def __init__(self,
+                 img_dim: Vec3,
+                 batch_size: int = 32,
+                 dropout_prob: float = 0.5) -> None:
         super(MainModel, self).__init__()
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=16,
+            nn.Conv2d(in_channels=3, out_channels=32,
                       kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (16, 50, 50)
-            nn.Conv2d(in_channels=16, out_channels=32,
+            # nn.BatchNorm2d(16),
+            nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (32, 50, 50)
+
+            nn.Conv2d(in_channels=32, out_channels=64,
                       kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (32, 25, 25)
-            ) # Output shape: (32, 25, 25)
+            # nn.BatchNorm2d(32),
+            nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (64, 25, 25)
+
+            nn.Conv2d(in_channels=64, out_channels=128,
+                      kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
+        ) # Output shape: (32, 25, 25)
         #   32: Channels
         #   25x25: Resulting width and height
-        self.fc_color = nn.Linear(32 * 25 * 25,
-                                  out_features = 3)  # 3 for the RGB channels
+
+        self.dropout = nn.Dropout(p=dropout_prob)
+
+        self.fc_color = nn.Linear(128 * 12 * 12,
+                                  out_features = 3)  # 3 for each of the RGB channels
         self.fc_shape = nn.Sequential(
-            nn.Linear(32 * 25 * 25,
+            nn.Linear(128 * 12 * 12,
                       out_features = 128, bias = True),
             nn.ReLU(),
+            # nn.BatchNorm1d(128),
             nn.Linear(128, len(Shapes)),
         )
         self.fc_first_point = nn.Sequential(
             nn.Linear(32 * 25 * 25,
                       out_features = 128, bias = True),
             nn.ReLU(),
+            # nn.BatchNorm1d(128),
             nn.Linear(128, 2)       # 2: x and y coordinate
         )
 
     def forward(self, x):
-        # Here we need the shape
-        #       (batch_size channels height width) i. e. (32 3 100 100)
-        # x = x.view(x.size(0), # Batch size
-        #            x.size(3), # Channels
-        #            x.size(1), # Height
-        #            x.size(2)) # Width
-        features = self.conv_layers(x)
-        features = features.view(x.size(0), -1)
-        shape = self.fc_shape(features)
+        x = self.conv_layers(x)
+        # x = self.dropout(x)
+        x = x.view(x.size(0), -1)
+        shape = self.fc_shape(x)
         #color = self.fc_color(features)
         #first_point = self.fc_first_point(features)
         return shape
@@ -216,34 +228,78 @@ transform_fn = transforms.Compose([
     #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize the image
 ])
 
+
+def validate_model(model, dataloader):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for i, (inputs, labels) in enumerate(dataloader):
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    return correct / total
+
 # }}}
 
 # Training {{{
 
 import torch.optim as optim
+from tensorboardX import SummaryWriter
 
-# Define your model
-model = MainModel(img_dim=Vec3(100, 100, 3), batch_size=32)
+# {{{
+num_epochs = 7
+batch_size = 32
+weight_decay = 1e-4
+
+
+# Define the model
+model = MainModel(img_dim=Vec3(100, 100, 3), batch_size=batch_size)
 
 # Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0005)
-num_epochs = 4
+# criterion = torchmetrics.classification.Accuracy(task="multiclass", num_classes=5)
+optimizer = optim.Adam(model.parameters(), lr=0.000005, weight_decay=weight_decay)
 
 # Data generation and preprocessing
 train_dataset = LazyDataset(
     img_dim = Vec3(100, 100, 3),
-    num_samples = 50 * 32,
+    num_samples = 30 * batch_size,
     transform = transform_fn,
 )
-dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
+val_dataset = LazyDataset(
+    img_dim = Vec3(100, 100, 3),
+    num_samples = batch_size,
+    transform = transform_fn,
+)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
+
+# Learning rate scheduler
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2)
+
+# Plot data
 train_losses = np.zeros(num_epochs * len(dataloader))
 train_accuracies = np.zeros(num_epochs * len(dataloader))
+val_losses = np.zeros(num_epochs)
+val_accuracies = np.zeros(num_epochs)
+
+log_dir = "logs"  # You can choose any directory name you prefer
+
+# Create a SummaryWriter
+writer = SummaryWriter(log_dir)
+
+# }}}
 
 # Training loop
 for epoch in range(num_epochs):
     running_loss = 0.0
+    correct_predictions = 0
+    total_samples = 0
+
     for i, (inputs, labels) in enumerate(dataloader):
         # Zero the parameter gradients
         optimizer.zero_grad()
@@ -253,15 +309,38 @@ for epoch in range(num_epochs):
 
         # Calculate loss
         loss = criterion(outputs, labels)
+        loss_val = loss.item()
 
         # Back propagation and optimization
         loss.backward()
         optimizer.step()
 
-        loss = loss.item()
+        # Update running loss
         running_loss += loss
         train_losses[epoch * len(dataloader) + i] = loss
-        # train_accuracies[epoch * len(dataloader) + i] = optimizer.state_dict()
+
+        # Calculate accuracy
+        _, predicted = torch.max(outputs.data, 1)
+        correct_predictions += (predicted == labels).sum().item()
+        total_samples += labels.size(0)
+        train_accuracies[epoch * len(dataloader) + i] = correct_predictions / total_samples
+
+        # Write scalars to TensorBoard
+        writer.add_scalar('Loss/train', loss, global_step=epoch)
+        writer.add_scalar('Accuracy/train', correct_predictions / total_samples, global_step=epoch)
+
+    # Calculate accuracy for the epoch
+    epoch_accuracy = correct_predictions / total_samples
+    train_accuracies[epoch] = epoch_accuracy
+    writer.add_scalar('Accuracy/validation', epoch_accuracy, global_step=epoch)
+
+    # Calculate validation loss
+    validation_loss = validate_model(model, val_loader)
+    val_losses[epoch] = validation_loss
+    writer.add_scalar('Loss/validation', validation_loss, global_step=epoch)
+
+    # Step the learning rate scheduler based on validation loss
+    scheduler.step(validation_loss)
 
     # Print loss at the end of each epoch
     print(f'Epoch {epoch+1}/{num_epochs}, Loss: {running_loss / len(dataloader)}')
@@ -274,16 +353,18 @@ torch.save(model.state_dict(), 'trained_model.pth')
 plt.figure(figsize=(12, 4))
 plt.subplot(1, 2, 1)
 plt.plot(train_losses, label="Train")
+plt.plot(val_losses, label="Validation")
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
 plt.legend()
 
 # Plot accuracy curves
-# plt.subplot(1, 2, 2)
-# plt.plot(train_accuracies, label="Train")
-# plt.xlabel("Epoch")
-# plt.ylabel("Accuracy")
-# plt.legend()
+plt.subplot(1, 2, 2)
+plt.plot(train_accuracies, label="Train")
+plt.plot(val_accuracies, label="Validation")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.legend()
 
 plt.show()
 
