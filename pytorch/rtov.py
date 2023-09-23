@@ -146,18 +146,19 @@ class MainModel(nn.Module):
         self.conv_layers = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32,
                       kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
-            # nn.BatchNorm2d(16),
             nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (32, 50, 50)
 
             nn.Conv2d(in_channels=32, out_channels=64,
                       kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
-            # nn.BatchNorm2d(32),
             nn.MaxPool2d(kernel_size=2, stride=2), # Output shape: (64, 25, 25)
 
             nn.Conv2d(in_channels=64, out_channels=128,
                       kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
 
@@ -166,6 +167,7 @@ class MainModel(nn.Module):
         #   25x25: Resulting width and height
 
         self.dropout = nn.Dropout(p=dropout_prob)
+        self.flatten = nn.Flatten()
 
         self.fc_color = nn.Linear(128 * 12 * 12,
                                   out_features = 3)  # 3 for each of the RGB channels
@@ -187,7 +189,7 @@ class MainModel(nn.Module):
     def forward(self, x):
         x = self.conv_layers(x)
         # x = self.dropout(x)
-        x = x.view(x.size(0), -1)
+        x = self.flatten(x)
         shape = self.fc_shape(x)
         #color = self.fc_color(features)
         #first_point = self.fc_first_point(features)
@@ -217,7 +219,7 @@ class LazyDataset(Dataset):
         shape = np.random.default_rng().integers(len(Shapes))
         pts = draw_on_image(self.features, shape, color=0)
         if self.transform:
-            self.tensor[:] = self.transform(self.features)
+            self.tensor = self.transform(self.features)
         # TODO: Calc size + first point
         return self.tensor, shape
 
@@ -228,18 +230,29 @@ transform_fn = transforms.Compose([
     #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize the image
 ])
 
+import torchmetrics
 
 def validate_model(model, dataloader):
     model.eval()
     correct = 0
     total = 0
     with torch.no_grad():
-        for i, (inputs, labels) in enumerate(dataloader):
+        for inputs, labels in dataloader:
             outputs = model(inputs)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     return correct / total
+
+def loss_fn(outputs, labels):
+    label_vecs = np.zeros((len(labels), len(Shapes)))
+    for i, label in enumerate(labels):
+        label_vecs[i][label] = 1
+    loss = nn.CrossEntropyLoss()(outputs, labels)
+    acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=len(Shapes))(outputs, labels)
+    print(f"Loss: {loss} + Acc: {acc} = {(loss + acc) * 0.5}")
+    # return (acc + loss) * 0.5
+    return loss
 
 # }}}
 
@@ -249,29 +262,30 @@ import torch.optim as optim
 from tensorboardX import SummaryWriter
 
 # {{{
-num_epochs = 7
+num_epochs = 8
 batch_size = 32
-weight_decay = 1e-4
+weight_decay = 1e-5
+img_dim = Vec3(100, 100, 3)
 
 
 # Define the model
-model = MainModel(img_dim=Vec3(100, 100, 3), batch_size=batch_size)
+model = MainModel(img_dim=img_dim, batch_size=batch_size)
 
 # Define loss function and optimizer
-criterion = nn.CrossEntropyLoss()
+criterion = loss_fn
 # criterion = torchmetrics.classification.Accuracy(task="multiclass", num_classes=5)
-optimizer = optim.Adam(model.parameters(), lr=0.000005, weight_decay=weight_decay)
+optimizer = optim.Adam(model.parameters(), lr=0.005, weight_decay=weight_decay)
 
 # Data generation and preprocessing
 train_dataset = LazyDataset(
-    img_dim = Vec3(100, 100, 3),
-    num_samples = 30 * batch_size,
+    img_dim = img_dim,
+    num_samples = 10 * batch_size,
     transform = transform_fn,
 )
 dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
 val_dataset = LazyDataset(
-    img_dim = Vec3(100, 100, 3),
+    img_dim = img_dim,
     num_samples = batch_size,
     transform = transform_fn,
 )
@@ -312,6 +326,7 @@ for epoch in range(num_epochs):
         loss_val = loss.item()
 
         # Back propagation and optimization
+        loss.requires_grad_()
         loss.backward()
         optimizer.step()
 
