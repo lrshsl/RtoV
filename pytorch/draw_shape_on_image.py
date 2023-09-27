@@ -6,6 +6,24 @@ import cv2
 
 class DefaultPoints: # {{{
     @staticmethod
+    def circle(dim: Vec2, random: bool = True) -> np.ndarray:
+        pts = np.zeros(3, dtype=np.int32)
+        if random:
+            rng = np.random.default_rng()
+            pts[0] = rng.integers(
+                low = 0, high = int(dim.x))    # center x
+            pts[1] = rng.integers(
+                low = 0, high = int(dim.x))    # center y
+            pts[2] = rng.integers(
+                low = 0, high = int(dim.y))    # radius
+            return pts
+
+        pts[0] = dim.x // 2
+        pts[1] = dim.y // 2
+        pts[2] = max(iter(dim)) // 4
+        return pts
+
+    @staticmethod
     def line(dim: Vec2, random: bool = True) -> np.ndarray:
         pts = np.zeros((2, 2), dtype=np.int32)
         if random:
@@ -74,7 +92,12 @@ class DefaultPoints: # {{{
 # fn draw_on_image {{{
 def draw_on_image(img: np.ndarray, shape: Shapes, color: int = 0) -> np.ndarray:
     """Mutates `img` in-place"""
-    if shape == 'Line':
+    if shape == 'Circle':
+        pts = DefaultPoints.circle(
+            Vec2(img.shape[0], img.shape[1]), random=True)
+        cv2.circle(img, (pts[0], pts[1]), pts[2], color)
+        return pts
+    elif shape == 'Line':
         pts = DefaultPoints.line(
             Vec2(img.shape[0], img.shape[1]), random=True)
         cv2.line(img, pts[0], pts[1], color)
@@ -90,3 +113,4 @@ def draw_on_image(img: np.ndarray, shape: Shapes, color: int = 0) -> np.ndarray:
     cv2.fillPoly(img, [pts], color=color)
     return pts
 # }}}
+

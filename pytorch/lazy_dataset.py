@@ -2,6 +2,7 @@ from draw_shape_on_image import draw_on_image
 from utils.shapes import shape_names
 
 from torch.utils.data import Dataset
+import torch
 
 import numpy as np
 
@@ -31,4 +32,5 @@ class LazyDataset(Dataset):
             #   DataLoader uses pointers, which are referenced per-batch, not per-item.
             #   If overwritten, the pointers all point to the last element by the time they are accessed
         # TODO: Calc size + first point
-        return self.tensor, shape_names.index(shape)
+        pts_f32 = pts.astype(np.float32)
+        return self.tensor, pts_f32[0]

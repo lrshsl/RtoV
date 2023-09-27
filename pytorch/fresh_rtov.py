@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import torch.optim as optim
 
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 
 # Data Preparation {{{
@@ -59,16 +59,16 @@ class Net(nn.Module):
             nn.Linear(120, 84),
             nn.Linear(84, 10),
             nn.ReLU(),
+            nn.Linear(10, 2),
         )
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
-        shape = self.shape_fc(x)
-        # p1 = self.p1_fc(x)
-        return shape
-
+        x = torch.flatten(x, 1)     # Flatten all dimensions except batch
+        # shape = self.shape_fc(x)
+        p1 = self.p1_fc(x)
+        return p1
 
 net = Net()
 # }}}
@@ -76,9 +76,8 @@ net = Net()
 # Loss & optimizer {{{
 import torch.optim as optim
 
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-
+criterion = nn.MSELoss()
+optimizer = optim.SGD(net.parameters(), lr=0.00005, momentum=0.9)
 # }}}
 
 # Training {{{
@@ -113,6 +112,8 @@ print('Finished Training')
 # }}}
 
 # Testing {{{
+import cv2
+
 images, labels = next(iter(testloader))
 images_list = list(images)
 labels_list = list(labels)
@@ -125,9 +126,16 @@ fig, axis = plt.subplots(rows, cols, figsize=(10, 10))
 
 for i in range(len(labels)):
     ax = axis[i // cols, i % cols]
-    image = images[i].permute(1, 2, 0) * 255
-    ax.imshow(image.cpu().numpy())
-    ax.set_title(shape_names[preds[i].argmax().item()])
+    pred = [int(p) for p in preds[i]]
+    image = images_list[i].numpy() * 255
+    image = image.astype(np.uint8)
+    image = np.transpose(image, (1, 2, 0))
+    image = image.copy() # Other is not writable
+
+    cv2.circle(image, pred, 1, (0, 0, 255), -1)
+    ax.imshow(image)
+    label = [int(l) for l in labels_list[i]]
+    ax.set_title(f"{label}\n{pred}")
     ax.axis('off')
 
 plt.tight_layout()
