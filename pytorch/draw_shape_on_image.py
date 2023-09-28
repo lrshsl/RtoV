@@ -11,16 +11,19 @@ class DefaultPoints: # {{{
         if random:
             rng = np.random.default_rng()
             pts[0] = rng.integers(
-                low = 0, high = int(dim.x))    # center x
+                low = dim.x // 4, high = int(dim.x * 3 // 4))    # center x
             pts[1] = rng.integers(
-                low = 0, high = int(dim.x))    # center y
+                low = dim.y // 4, high = int(dim.y * 3 // 4))    # center y
             pts[2] = rng.integers(
-                low = 0, high = int(dim.y))    # radius
+                low = 0, high = int(min(
+                    pts[0], dim.x - pts[0],
+                    pts[1], dim.y - pts[1]
+                    )))    # radius
             return pts
 
         pts[0] = dim.x // 2
         pts[1] = dim.y // 2
-        pts[2] = max(iter(dim)) // 4
+        pts[2] = max(dim) // 4
         return pts
 
     @staticmethod
@@ -95,7 +98,7 @@ def draw_on_image(img: np.ndarray, shape: Shapes, color: int = 0) -> np.ndarray:
     if shape == 'Circle':
         pts = DefaultPoints.circle(
             Vec2(img.shape[0], img.shape[1]), random=True)
-        cv2.circle(img, (pts[0], pts[1]), pts[2], color)
+        cv2.circle(img, (pts[0], pts[1]), pts[2], color, -1)
         return pts
     elif shape == 'Line':
         pts = DefaultPoints.line(

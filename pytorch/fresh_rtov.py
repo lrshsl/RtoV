@@ -1,6 +1,6 @@
 from utils.vec import Vec3
 from lazy_dataset import LazyDataset
-from utils.shapes import shape_names
+from utils.shapes import shape_names, Shapes
 
 import torch
 import torchvision.transforms as transforms
@@ -27,7 +27,6 @@ trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_work
 
 testset = LazyDataset(img_dim=Vec3(32, 32, 3), num_samples=100, transform=transform)
 testloader = DataLoader(testset, batch_size=16, shuffle=False, num_workers=2)
-
 # }}}
 
 # Model {{{
@@ -75,8 +74,14 @@ net = Net()
 
 # Loss & optimizer {{{
 import torch.optim as optim
+import torchmetrics
+
+def p_loss_fn(outputs, labels):
+    loss = nn.MSELoss()(outputs, labels[:, :2])
+    return loss
 
 criterion = nn.MSELoss()
+shape_loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.00005, momentum=0.9)
 # }}}
 
@@ -86,14 +91,17 @@ for epoch in range(epochs):  # loop over the dataset multiple times
 
     running_loss = 0.0
     images_per_epoch = 0
-    for i, (inputs, labels) in enumerate(trainloader):
+    for i, (inputs, shape_labels,
+            point_labels) in enumerate(trainloader):
 
         # zero the parameter gradients
         optimizer.zero_grad()
 
         # forward + backward + optimize
         outputs = net(inputs)
-        loss = criterion(outputs, labels)
+        # shape_loss = criterion(outputs, labels)
+        loss = p_loss_fn(outputs, point_labels)
+
         loss.backward()
         optimizer.step()
 
@@ -114,17 +122,18 @@ print('Finished Training')
 # Testing {{{
 import cv2
 
-images, labels = next(iter(testloader))
+images, shape_labels, point_labels = next(iter(testloader))
 images_list = list(images)
-labels_list = list(labels)
+shape_labels_list = list(shape_labels)
+point_labels_list = list(point_labels)
 preds = net(images)
 
 cols = 4
-rows = len(labels) // cols
+rows = len(shape_labels) // cols
 
 fig, axis = plt.subplots(rows, cols, figsize=(10, 10))
 
-for i in range(len(labels)):
+for i in range(len(shape_labels_list)):
     ax = axis[i // cols, i % cols]
     pred = [int(p) for p in preds[i]]
     image = images_list[i].numpy() * 255
@@ -134,7 +143,7 @@ for i in range(len(labels)):
 
     cv2.circle(image, pred, 1, (0, 0, 255), -1)
     ax.imshow(image)
-    label = [int(l) for l in labels_list[i]]
+    label = [int(l) for l in point_labels_list[i]]
     ax.set_title(f"{label}\n{pred}")
     ax.axis('off')
 
