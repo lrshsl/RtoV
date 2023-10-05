@@ -8,6 +8,8 @@ import numpy as np
 
 from utils.vec import Vec3
 
+MAX_DP_PER_SHAPE = 6 # Triangle: 3 * 2 points
+
 class LazyDataset(Dataset):
     features: np.ndarray
     tensor: np.ndarray
@@ -24,14 +26,17 @@ class LazyDataset(Dataset):
     def __getitem__(self, _) -> tuple[np.ndarray, Shapes, np.ndarray]:
         self.features[:] = np.full(self.features.shape, 255, dtype=np.uint8)    # Overwrite the memory directly to (hopefully) reduce memory => fewer GC cycles
         # shape = np.random.choice(shape_names)
-        shape = "Circle"
-        pts = draw_on_image(self.features, shape, color=0)
+        shape = Shapes.Circle
+        pts = np.zeros(MAX_DP_PER_SHAPE, dtype=np.float32)
+        pts[:] = draw_on_image(self.features,
+                               shape,
+                               color=(0, 0, 0),
+                               pad=MAX_DP_PER_SHAPE)
         if self.transform:
             self.tensor = self.transform(self.features)
             # Don't overwrite with [:]:
-            #   DataLoader uses pointers, which are referenced per-batch, not per-item.
+            #   DataLoader uses pointers, which are referenced per-batch, not directly after the call
             #   If overwritten, the pointers all point to the last element by the time they are accessed
         # TODO: Calc size + first point
-        pts_f32 = pts.astype(np.float32)
-        return self.tensor, shape, pts_f32
+        return self.tensor, shape, pts
 
