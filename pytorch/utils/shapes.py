@@ -2,8 +2,10 @@
 import enum
 
 class Shapes(enum.IntEnum):
-    Line = 0
-    Triangle = 1
-    Rect = 2
+    Circle = 0
+    Line = 1
+    Triangle = 2
+    Rectangle = 3
 
-shape_names = 'Line', 'Triangle', 'Rect'
+shape_names = 'Circle', 'Line', 'Triangle', 'Rectangle'
+
