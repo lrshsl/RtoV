@@ -20,7 +20,7 @@ LEARNING_RATE = 0.00005
 LEARNING_MOMENTUM = 0.9
 
 BATCH_SIZE = 4
-N_EPOCHS = 5
+N_EPOCHS = 20
 # }}}
 
 # Data Preparation {{{
@@ -133,22 +133,49 @@ class Net(nn.Module):
         return shapes, out
     # }}}
 
-net = Net()
 # }}}
 
 # Loss & optimizer {{{
 import torch.optim as optim
-from torch.nn.utils.rnn import pad_sequence
-# import torchmetrics
+import os
+
+# Model
+net = Net()
 
 # Optimizer
 optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=LEARNING_MOMENTUM)
+
+# Load checkpoint {{{
+checkpoint = {
+    'model_state_dict': net.state_dict(),
+    'optimizer_state_dict': optimizer.state_dict(),
+    'epoch': 0,
+}
+use_pretrained = input("Use pre-trained model? (y/N) ") == "y"
+while use_pretrained:
+    load_path = 'saved_models/' + input('Enter name of model: ') + '.pth'
+
+    if os.path.isfile(load_path):
+        # Load checkpoint
+        checkpoint = torch.load(load_path)
+        break
+
+    # Ask again if file doesn't exist
+    print(f"File not found: {load_path}")
+    use_pretrained = input("Use pre-trained model? (y/N) ") == "y"
+
+
+# Load values
+net.load_state_dict(checkpoint['model_state_dict'])
+optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+# }}}
 
 # Shape loss
 shape_loss_fn = nn.CrossEntropyLoss()
 
 # Points loss
 points_loss_fn = nn.MSELoss()
+
 # }}}
 
 # Training {{{
@@ -157,7 +184,8 @@ points_losses = []
 # color_losses = []
 
 # Loop over the dataset multiple times (data is regenerated differenty each epoch)
-for epoch in range(N_EPOCHS):
+start_epoch = checkpoint['epoch']
+for epoch in range(start_epoch, start_epoch + N_EPOCHS):
 
     # Zero the running losses
     shape_running_loss = 0.0
@@ -181,6 +209,7 @@ for epoch in range(N_EPOCHS):
 
         # Backpropagation
         shape_loss.backward(retain_graph=True)
+        # if shape_loss.item() < 1:   # First teach to recognise the shape
         points_loss.backward(retain_graph=True)
 
         # Optimize
@@ -234,13 +263,12 @@ def mark_shape(image, shape, data, color=(200, 200, 200)):
         case 'Circle':
             center = data[:2]
             r = data[2]
-            print(f'Drawing shape: Circle({center}, {r})')
             cv2.circle(image, center, r, color, 1)
         case 'Line':
             p1 = data[:2]
             p2 = data[2:4]
-            width = data[4]
-            cv2.line(image, p1, p2, color, width)
+            _width = data[4]
+            cv2.line(image, p1, p2, color, 1)
         case 'Triangle':
             p1 = data[:2]
             p2 = data[2:4]
@@ -249,16 +277,20 @@ def mark_shape(image, shape, data, color=(200, 200, 200)):
             cv2.line(image, p2, p3, color, 1)
             cv2.line(image, p3, p1, color, 1)
         case 'Rectangle':
-            p1 = data[:2]
-            p2 = data[2:4]
-            p3 = data[4:6]
-            p4 = data[6:8]
+            pt = data[:2]
+            w, h = data[2:4]
+            _orientation = data[4]
+            p1 = pt
+            p2 = pt + np.array((w, 0))
+            p3 = pt + np.array((w, h))
+            p4 = pt + np.array((0, h))
             cv2.line(image, p1, p2, color, 1)
             cv2.line(image, p2, p3, color, 1)
             cv2.line(image, p3, p4, color, 1)
             cv2.line(image, p4, p1, color, 1)
 # }}}
 
+# Display results {{{
 # Show each image on the window
 for i in range(len(shape_labels_list)):
     # Where to put the image
@@ -290,20 +322,26 @@ for i in range(len(shape_labels_list)):
 # Show everything
 plt.tight_layout()
 plt.show()
-print('Finished testing')
-
-# TODO: Save model, interactively restart training
-# test_accuracy = (preds.argmax(dim=1) == labels).sum().item()
-
-# if input(f'Performance: {test_accuracy}\nSave model? (y/N)') == 'y':
-#     name = input('Name: ') + '.pt'
-#     torch.save(net.state_dict(), 'model.pt')
-
-# if input('Continue training? (y/N)') == 'y':
-    # epochs = input('How many epochs?')
-    # train(net, criterion, optimizer, epochs)
-
-# net.load_state_dict(torch.load('model.pt'))
 # }}}
 
+print('Finished testing')
+# }}}
+
+# Save model {{{
+if input("Save the model? [y/N]") == 'y':
+    # Save the model
+    checkpoint = {
+        'model_state_dict': net.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'epoch': start_epoch + N_EPOCHS,
+    }
+
+    # The file path where the model will be saved to
+    save_path = 'saved_models/' + input("Enter name of model: ") + '.pth'
+
+    # Save the model
+    torch.save(checkpoint, save_path)
+
+    print(f"Model saved to '{save_path}'")
+# }}}
 

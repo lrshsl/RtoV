@@ -26,7 +26,7 @@ class LazyDataset(Dataset):
     def __getitem__(self, _) -> tuple[np.ndarray, Shapes, np.ndarray]:
         self.features[:] = np.full(self.features.shape, 255, dtype=np.uint8)    # Overwrite the memory directly to (hopefully) reduce memory => fewer GC cycles
         # shape = np.random.choice(shape_names)
-        shape = Shapes.Circle
+        shape = np.random.choice(list(Shapes))
         pts = np.zeros(MAX_DP_PER_SHAPE, dtype=np.float32)
         pts[:] = draw_on_image(self.features,
                                shape,

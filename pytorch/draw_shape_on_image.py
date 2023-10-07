@@ -16,7 +16,7 @@ class DefaultPoints: # {{{
             pts[1] = rng.integers(
                 low = dim.y // 4, high = int(dim.y * 3 // 4))    # center y
             pts[2] = rng.integers(
-                low = 0, high = int(min(
+                low = 1, high = int(min(
                     pts[0], dim.x - pts[0],
                     pts[1], dim.y - pts[1]
                     )))    # radius
@@ -32,14 +32,11 @@ class DefaultPoints: # {{{
         pts = np.zeros(pad, dtype=np.int32)
         if random:
             rng = np.random.default_rng()
-            pts[0] = rng.integers(
+            pts[[0, 2]] = rng.integers(
                 low = 0, high = int(dim.x), size = 2)    # x values
-            pts[1] = rng.integers(
-                low = 0, high = int(dim.x), size = 2)    # x values
-            pts[2] = rng.integers(
+            pts[[1, 3]] = rng.integers(
                 low = 0, high = int(dim.y), size = 2)    # y values
-            pts[3] = rng.integers(
-                low = 0, high = int(dim.y), size = 2)    # y values
+            pts[4] = 1 # Width for now always 1 # TODO
             return pts
 
         # Diagonal line through the image from (0, 0)
@@ -54,19 +51,19 @@ class DefaultPoints: # {{{
         # Random three points
         if random:
             rng = np.random.default_rng()
-            pts[:, 0] = rng.integers(
+            pts[[0, 2, 4]] = rng.integers(
                 low = 0, high = int(dim.x), size = 3)    # x values
-            pts[:, 1] = rng.integers(
+            pts[[1, 3, 5]] = rng.integers(
                 low = 0, high = int(dim.y), size = 3)    # y values
             return pts
 
         # (More or less) regular triangle
-        pts[0, 0] = dim.x // 4      # Bottom left
-        pts[0, 1] = dim.y // 4
-        pts[1, 0] = dim.x * 3 // 4  # Bottom right
-        pts[1, 1] = dim.y // 4
-        pts[2, 0] = dim.x // 2      # Top mid
-        pts[2, 1] = dim.y * 3 // 4
+        pts[0] = dim.x // 4      # Bottom left
+        pts[1] = dim.y // 4
+        pts[2] = dim.x * 3 // 4  # Bottom right
+        pts[3] = dim.y // 4
+        pts[4] = dim.x // 2      # Top mid
+        pts[5] = dim.y * 3 // 4
         return pts
 
     @staticmethod
@@ -76,19 +73,19 @@ class DefaultPoints: # {{{
         if random:
             rng = np.random.default_rng()
             # Top left corner
-            pts[0] = rng.integers(0, int(dim.x * 3 // 4))  # Leave enough space free
-            pts[1] = rng.integers(0, int(dim.y * 3 // 4))
+            pts[0] = rng.integers(0, int(dim.x // 2))  # Leave enough space free
+            pts[1] = rng.integers(0, int(dim.y // 2))
             # Width
-            pts[2] = rng.integers(pts[0], int(dim.x))
+            pts[2] = rng.integers(1, max((int(dim.x) - pts[0]) * 9 // 10, 1))   # The upper limit is at least 1, else 9 10th of the remaining space
             # Height
-            pts[3] = rng.integers(pts[1], int(dim.y))
+            pts[3] = rng.integers(1, max((int(dim.y) - pts[1]) * 9 // 10, 1))   # Same with width
             return pts
 
         # Regular rectangle
-        pts[[0, 1], 0] = dim.x // 4     # Left edge
-        pts[[0, 3], 1] = dim.y // 4     # Top edge
-        pts[[2, 3], 0] = dim.x * 3 // 4 # Right edge
-        pts[[1, 2], 1] = dim.y * 3 // 4 # Bottom edge
+        pts[0] = dim.x // 10     # x coordinate of top left corner
+        pts[1] = dim.y // 10     # y coordinate
+        pts[2] = dim.x * 8 // 10 # Width
+        pts[3] = dim.y * 8 // 10 # Height
         return pts
 # }}}
 
@@ -111,21 +108,22 @@ def draw_on_image(img: np.ndarray,
         case Shapes.Line:
             pts = DefaultPoints.line(
                 Vec2(img.shape[0], img.shape[1]), random=random, pad=pad)
-            cv2.line(img, pts[0], pts[1], color)
+            cv2.line(img, pts[[0, 2]], pts[[1, 3]], color)
             return pts
 
         case Shapes.Triangle:
             pts = DefaultPoints.triangle(
                 Vec2(img.shape[0], img.shape[1]), random=random, pad=pad)
+            cv2.fillPoly(img, [pts.reshape(-1, 2)], color=color)
+            return pts
 
         case Shapes.Rectangle:
             pts = DefaultPoints.rectangle(
                 Vec2(img.shape[0], img.shape[1]), random=random, pad=pad)
+            cv2.rectangle(img, (pts[0], pts[1]), (pts[2], pts[3]), color, -1)
+            return pts
 
         case _:
             raise ValueError("Unknown or unimplemented shape: {}".format(shape))
-
-    cv2.fillPoly(img, [pts], color=color)
-    return pts
 # }}}
 
