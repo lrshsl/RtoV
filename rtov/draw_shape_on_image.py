@@ -1,5 +1,5 @@
-from utils.vec import Vec2
-from utils.shapes import Shapes
+from rtov.utils.vec import Vec2
+from rtov.utils.shapes import Shapes
 
 import numpy as np
 import cv2

@@ -1,6 +1,6 @@
-from utils.vec import Vec3
-from lazy_dataset import LazyDataset
-from utils.shapes import shape_names, Shapes
+from rtov.utils.vec import Vec3
+from rtov.lazy_dataset import LazyDataset
+from rtov.utils.shapes import shape_names, Shapes
 
 import torch
 import torchvision.transforms as transforms
@@ -41,7 +41,7 @@ testloader = DataLoader(testset, batch_size=16, shuffle=False, num_workers=2) # 
 
 # Model {{{
 import torch.nn as nn
-from lazy_dataset import MAX_DP_PER_SHAPE
+from rtov.lazy_dataset import MAX_DP_PER_SHAPE
 # import torch.nn.functional as F
 
 

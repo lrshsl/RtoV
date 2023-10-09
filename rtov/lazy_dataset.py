@@ -1,12 +1,9 @@
-from draw_shape_on_image import draw_on_image
-from utils.shapes import shape_names, Shapes
+from rtov.draw_shape_on_image import draw_on_image
+from rtov.utils.shapes import SHAPE_NAMES, Shapes
+from rtov.utils.vec import Vec3
 
 from torch.utils.data import Dataset
-import torch
-
 import numpy as np
-
-from utils.vec import Vec3
 
 MAX_DP_PER_SHAPE = 6 # Triangle: 3 * 2 points
 
