@@ -74,7 +74,9 @@ class RtoVMainModel(torch.nn.Module):
         # Predict points
         out = torch.zeros((x.shape[0], constants.SHAPE_SPEC_MAX_SIZE), dtype=torch.float32)
 
+        # Predict points, per sample
         for shape_pred in shapes:
+
             # Output size depends on shape
             match shape_pred.argmax():
                 case Shapes.Circle:

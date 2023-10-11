@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Self, Union, Generator
+from typing import Self, Union, Generator, Iterator
 
 
 Number = Union[np.number, int, float]
@@ -25,7 +25,7 @@ class Vec2:
     def as_float_tuple(self) -> tuple[float, float]:
         return float(self.x), float(self.y)
 
-    def __iter__(self) -> Generator[Number, None, None]:
+    def __iter__(self) -> Iterator:
         yield self.x
         yield self.y
 

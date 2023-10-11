@@ -4,17 +4,18 @@ from rtov.utils.shapes import Shapes
 import numpy as np
 import cv2
 from cv2.typing import Scalar
+from typing import Optional, Callable
 
 class DefaultPoints: # {{{
     @staticmethod
-    def circle(dim: Vec2, random: bool = True, pad: int = 3) -> np.ndarray:
+    def circle(dim: Vec2, random: bool = True, pad: int = 3, seed: Optional[int] = 0) -> np.ndarray:
         pts = np.zeros(pad, dtype=np.int32)
         if random:
-            rng = np.random.default_rng()
+            rng = np.random.default_rng(seed)
             pts[0] = rng.integers(
-                low = dim.x // 4, high = int(dim.x * 3 // 4))    # center x
+                low = int(dim.x // 4), high = int(dim.x * 3 // 4))    # center x
             pts[1] = rng.integers(
-                low = dim.y // 4, high = int(dim.y * 3 // 4))    # center y
+                low = int(dim.y // 4), high = int(dim.y * 3 // 4))    # center y
             pts[2] = rng.integers(
                 low = 1, high = int(min(
                     pts[0], dim.x - pts[0],
@@ -24,14 +25,14 @@ class DefaultPoints: # {{{
 
         pts[0] = dim.x // 2
         pts[1] = dim.y // 2
-        pts[2] = max(dim) // 4
+        pts[2] = max(iter(dim)) // 4
         return pts
 
     @staticmethod
-    def line(dim: Vec2, random: bool = True, pad: int = 4) -> np.ndarray:
+    def line(dim: Vec2, random: bool = True, pad: int = 4, seed: Optional[int] = 0) -> np.ndarray:
         pts = np.zeros(pad, dtype=np.int32)
         if random:
-            rng = np.random.default_rng()
+            rng = np.random.default_rng(seed)
             pts[[0, 2]] = rng.integers(
                 low = 0, high = int(dim.x), size = 2)    # x values
             pts[[1, 3]] = rng.integers(
@@ -45,12 +46,12 @@ class DefaultPoints: # {{{
         return pts
 
     @staticmethod
-    def triangle(dim: Vec2, random: bool = True, pad: int = 6) -> np.ndarray:
+    def triangle(dim: Vec2, random: bool = True, pad: int = 6, seed: Optional[int] = 0) -> np.ndarray:
         pts = np.zeros(pad, dtype=np.int32)
 
         # Random three points
         if random:
-            rng = np.random.default_rng()
+            rng = np.random.default_rng(seed)
             pts[[0, 2, 4]] = rng.integers(
                 low = 0, high = int(dim.x), size = 3)    # x values
             pts[[1, 3, 5]] = rng.integers(
@@ -67,11 +68,11 @@ class DefaultPoints: # {{{
         return pts
 
     @staticmethod
-    def rectangle(dim: Vec2, random: bool = True, pad: int = 5) -> np.ndarray:
+    def rectangle(dim: Vec2, random: bool = True, pad: int = 5, seed: Optional[int] = 0) -> np.ndarray:
         pts = np.zeros(pad, dtype=np.int32)
 
         if random:
-            rng = np.random.default_rng()
+            rng = np.random.default_rng(seed)
             # Top left corner
             pts[0] = rng.integers(0, int(dim.x // 2))  # Leave enough space free
             pts[1] = rng.integers(0, int(dim.y // 2))
@@ -94,33 +95,64 @@ def draw_on_image(img: np.ndarray,
                   shape: Shapes,
                   color: Scalar = (0, 0, 0),
                   random: bool = True,
-                  pad: int = 6) -> np.ndarray:
+                  pad: int = 6,
+                  seed: Optional[Callable[[], int]] = None) -> np.ndarray:
     """Mutates `img` in-place"""
 
+    # Prepare array, to fill the points in
     pts = np.zeros(pad, dtype=np.float32)
+
+    seed_int = None if seed is None else seed()
+
+    # Generate the required information and draw the resulting shape
     match shape:
         case Shapes.Circle:
+
+            # Get points
             pts = DefaultPoints.circle(
-                Vec2(img.shape[0], img.shape[1]), random=random, pad=pad)
+                Vec2(img.shape[0], img.shape[1]),
+                random=random, pad=pad, seed=seed_int)
+
+            # Draw
             cv2.circle(img, (pts[0], pts[1]), pts[2], color, -1)
+
             return pts
 
         case Shapes.Line:
+
+            # Get points
             pts = DefaultPoints.line(
-                Vec2(img.shape[0], img.shape[1]), random=random, pad=pad)
-            cv2.line(img, pts[[0, 2]], pts[[1, 3]], color)
+                Vec2(img.shape[0], img.shape[1]),
+                random=random, pad=pad, seed=seed_int)
+
+            # Draw
+            cv2.line(img, pts[[0, 2]].tolist(), pts[[1, 3]].tolist(), color)
+
             return pts
 
         case Shapes.Triangle:
+
+            # Get points
             pts = DefaultPoints.triangle(
-                Vec2(img.shape[0], img.shape[1]), random=random, pad=pad)
+                Vec2(img.shape[0], img.shape[1]),
+                random=random, pad=pad, seed=seed_int)
+
+            # Draw
             cv2.fillPoly(img, [pts.reshape(-1, 2)], color=color)
+
             return pts
 
         case Shapes.Rectangle:
+
+            # Get points
             pts = DefaultPoints.rectangle(
-                Vec2(img.shape[0], img.shape[1]), random=random, pad=pad)
-            cv2.rectangle(img, (pts[0], pts[1]), (pts[2], pts[3]), color, -1)
+                Vec2(img.shape[0], img.shape[1]),
+                random=random, pad=pad, seed=seed_int)
+
+            # Draw
+            cv2.rectangle(img, (pts[0], pts[1]),
+                          (pts[2], pts[3]), color, -1)
+
             return pts
 
         case _:
