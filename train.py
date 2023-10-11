@@ -1,10 +1,12 @@
 from rtov.utils.vec import Vec3
 from rtov.lazy_dataset import LazyDataset
-from rtov.utils.shapes import shape_names, Shapes
+from rtov.utils.shapes import SHAPE_NAMES, Shapes
+import constants
 
 import torch
 import torchvision.transforms as transforms
 import torch.optim as optim
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,7 +21,8 @@ IMG_DIM = Vec3(32, 32, 3)
 LEARNING_RATE = 0.00005
 LEARNING_MOMENTUM = 0.9
 
-BATCH_SIZE = 4
+BATCH_SIZE = 4              # Samples per batch
+NUM_SAMPLES_TRAIN = 5_000   # Total number of samples
 N_EPOCHS = 20
 # }}}
 
@@ -32,16 +35,18 @@ transform = transforms.Compose([
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
-trainset = LazyDataset(img_dim=IMG_DIM, num_samples=2000, transform=transform)
-trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
+trainset = LazyDataset(
+        img_dim = IMG_DIM, num_samples = NUM_SAMPLES_TRAIN, transform = transform)
+trainloader = DataLoader(trainset, batch_size = BATCH_SIZE, shuffle = True, num_workers = 2)
 
-testset = LazyDataset(img_dim=IMG_DIM, num_samples=100, transform=transform)
-testloader = DataLoader(testset, batch_size=16, shuffle=False, num_workers=2) # 16: For 4x4 inspection
+testset = LazyDataset(img_dim = IMG_DIM, num_samples = 100,
+                      transform = transform,
+                      seed = lambda: int(time.time() * 1000))   # Seed makes sure the images are different
+testloader = DataLoader(testset, batch_size = 16, shuffle = False, num_workers = 2) # 16: For 4x4 inspection
 # }}}
 
 # Model {{{
 import torch.nn as nn
-from rtov.lazy_dataset import MAX_DP_PER_SHAPE
 # import torch.nn.functional as F
 
 
@@ -114,7 +119,7 @@ class Net(nn.Module):
 
         # Predict points
         pts = torch.Tensor()
-        out = torch.zeros((x.shape[0], MAX_DP_PER_SHAPE), dtype=torch.float32)
+        out = torch.zeros((x.shape[0], constants.SHAPE_SPEC_MAX_SIZE), dtype=torch.float32)
 
         for shape_pred in shapes:
             # Output size depends on shape
@@ -292,16 +297,17 @@ def mark_shape(image, shape, data, color=(200, 200, 200)):
 
 # Display results {{{
 # Show each image on the window
+print(shape_labels_list)
 for i in range(len(shape_labels_list)):
     # Where to put the image
     ax = axis[i // cols, i % cols]
 
     # Truth values
-    shape_label = shape_names[shape_labels_list[i].argmax()]
+    shape_label = SHAPE_NAMES[shape_labels_list[i].argmax()]
     point_label = [int(l) for l in point_labels_list[i]]
 
     # Predicted
-    shape_pred = shape_names[shape_preds[i].argmax()]
+    shape_pred = SHAPE_NAMES[shape_preds[i].argmax()]
     points_pred = [int(p) for p in points_preds[i]]
 
     # Prepare the image

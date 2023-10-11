@@ -8,7 +8,7 @@ import itertools as itt
 from typing import Optional
 
 from rtov.utils.shapes import draw_shape, Shapes, SHAPE_NAMES
-from rtov.utils.tensor2image import tensor2image
+import rtov.utils.utils as utils
 import constants
 
 class ModelAnalytics:
@@ -24,51 +24,6 @@ class ModelAnalytics:
         self.model = model
         self.dataloader = dataloader
         self.batch_size = batch_size
-    # }}}
-
-    # _get_samples {{{
-    def _get_samples(self, num_samples: int) -> tuple[np.ndarray, ...]:
-        """Requests `num_samples` samples from the dataloader and collects them into numpy arrays."""
-
-        # Transpose the image shape (WHC -> CWH, where C = channels = 3 and W, H = width, height of images)
-        img_shape: tuple[int, ...] = constants.IMG_DIM.as_int_tuple()
-        img_shape = (
-            img_shape[2],
-            img_shape[0],
-            img_shape[1])
-
-        # Number of batches needed to achieve `num_samples` samples
-        nbatches: int = num_samples // self.batch_size + 1
-
-        # Empty arrays to be filled
-        images: np.ndarray = np.zeros(
-                (nbatches, self.batch_size, *img_shape),
-                dtype=np.uint8)
-        shape_labels: np.ndarray = np.zeros(
-                (nbatches, self.batch_size),
-                dtype=np.int32)
-        point_labels: np.ndarray = np.zeros(
-                (nbatches, self.batch_size, constants.SHAPE_SPEC_MAX_SIZE),
-                dtype=np.float32)
-
-        # Fill the arrays
-        for i in range(nbatches):
-            for data in self.dataloader:
-
-                # Unpack data
-                imgs, shapes, pts = data
-
-                # In case it doesn't add up
-                if imgs.shape[0] != self.batch_size:
-                    images[i, :imgs.shape[0]] = imgs.clone()
-                    break
-
-                # Write to arrays
-                images[i] = imgs.clone()
-                shape_labels[i] = shapes.clone()
-                point_labels[i] = pts.clone()
-
-        return images, shape_labels, point_labels
     # }}}
 
     # _unpack_and_predict {{{
@@ -120,45 +75,60 @@ class ModelAnalytics:
     # [public] print_model_performance {{{
     def print_model_performance(self, num_samples: int) -> None:
 
-        # Prepare data
-        images, shape_labels, point_labels = self._get_samples(num_samples)
-
         # Running statistics
-        correct_shapes: int = 0
-        points_error: int = 0
+        self.correct_shapes: int = 0
+        self.points_error: int = 0
+        self.running_sample_count: int = 0
 
-        nbatches = num_samples // self.batch_size
+        nbatches: int = num_samples // self.batch_size
 
-        # Run the model per batch
-        for n in range(0, nbatches + 1, len(self.dataloader)):
-            for i, batch_data in enumerate(self.dataloader):
+        # Reset the dataloader as many times as necessary
+        for _ in range(0, num_samples, self.batch_size * len(self.dataloader)):
 
-                # Unpack data
-                imgs, shapes, pts = batch_data
-
-                # Let the model predict
-                shape_preds, points_preds = self.model(torch.Tensor(imgs))
-
-                # Batch statistics
-                batch_correct_shapes = (shape_preds.argmax(dim=1) == torch.Tensor(shapes)).float().sum().item()
-                batch_points_error = (points_preds - torch.Tensor(pts)).abs().sum().item()
-                print(f'[Batch {i} / {nbatches}] Correct shapes: {batch_correct_shapes} / {self.batch_size}, Points error: {batch_points_error}')
-
-                # Update statistics
-                correct_shapes += batch_correct_shapes
-                points_error += batch_points_error
+            # Retrieve and process the batches from the dataloader
+            if not self._print_performance_once(nbatches, num_samples):
+                break
 
         print('\n\n----- Statistics -----\n')
-        print(f'Correct shapes: {correct_shapes} / {num_samples} --> {correct_shapes / num_samples * 100}%')
-        print(f'Points error: {points_error} / {num_samples} --> {points_error / num_samples} per shape')
+        print(f'Correct shapes: {self.correct_shapes} / {num_samples} --> {self.correct_shapes / num_samples * 100}%')
+        print(f'Points error: {self.points_error} / {num_samples} --> {self.points_error / num_samples} px per shape')
+        if self.running_sample_count != num_samples:
+            print(f"[Error] Expected {num_samples} samples to be processed, got {self.running_sample_count}")
     # }}}
+
+
+    def _print_performance_once(self, nbatches: int, num_samples: int) -> bool:
+        for i, batch_data in enumerate(self.dataloader):
+
+            # Unpack data
+            imgs, shapes, pts = batch_data
+
+            # Let the model predict
+            shape_preds, points_preds = self.model(torch.Tensor(imgs))
+
+            # Batch statistics
+            batch_correct_shapes = (shape_preds.argmax(dim=1) == torch.Tensor(shapes)).float().sum().item()
+            batch_points_error = (points_preds - torch.Tensor(pts)).abs().sum().item()
+            print(f'[Batch {i + 1} / {nbatches}] Correct shapes: {batch_correct_shapes} / {self.batch_size}, Points error: {batch_points_error}')
+
+            # Update statistics
+            self.correct_shapes += batch_correct_shapes
+            self.points_error += batch_points_error
+            self.running_sample_count += self.batch_size
+
+            if self.running_sample_count >= num_samples:
+                print('---<< [Log] "Print model performance" done >>--')
+                return False
+
+        # Not necessarily done
+        return True
 
     # [public] show_examples {{{
     def show_examples(self, result_save_path: str | None, hide: bool) -> None:
         """Plot the labels and predictions pairwise next to each other."""
 
         # Prepare the plotting window
-        fig, axis = self._prepare_plot()
+        _, axis = self._prepare_plot()
 
         num_image_pairs: int = 2 * 4        # 8 label-prediction pairs
 
@@ -188,7 +158,7 @@ class ModelAnalytics:
             points_pred = [int(p) for p in points_preds]
 
             # Prepare the original image (Ground truth)
-            org_image: np.ndarray = tensor2image(org_images)
+            org_image: np.ndarray = utils.tensor2image(org_images)
 
             # Create the predicted image from the given specification
             pred_image: np.ndarray = np.full(org_image.shape, 255, dtype=np.uint8)                      # White canvas
@@ -205,39 +175,5 @@ class ModelAnalytics:
         # Show everything
         self._make_plot(result_save_path, hide)
     # }}}
-
-    # [public] visualize_samples {{{
-    def visualize_samples(self):
-        images, *_ = self._get_samples(16)
-        images = images.reshape(-1, 3, 32, 32)
-        images = images.transpose(0, 2, 3, 1)
-        print(images.shape)
-        
-        fig, axes = plt.subplots(4, 4, figsize=(10, 10))
-        for i, ax in enumerate(axes.flat):
-            ax.imshow(images[i])
-            ax.axis('off')
-
-        plt.tight_layout()
-        plt.show()
-
-        # Directly from the dataset
-        images = next(iter(self.dataloader))[0]
-        images = images.reshape(-1, 32, 32, 3)
-        print(images.shape)
-        
-        fig, axes = plt.subplots(4, 4, figsize=(10, 10))
-        for i, ax in enumerate(axes.flat):
-            ax.imshow(images[i])
-            ax.axis('off')
-
-        plt.tight_layout()
-        plt.show()
-
-        # Even more directly
-        for imgs, *_ in self.dataloader:
-            imgs = imgs.reshape(-1, 32, 32, 3)
-    # }}}
-
 
 

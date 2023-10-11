@@ -10,7 +10,11 @@ def get_parser() -> argparse.ArgumentParser:
     mode == 'test'
         load_model: str, model that should be tested
         show_examples: bool, show an example batch
+        hide_plot: bool, hide plotting window
         result_save_path: str, path to save the results to (if not given, no saving)
+        batch_size: int, batch size
+        total_num_samples: int, total number of samples
+        num_workers: int, number of workers
 
     mode == 'train'
         load_model: str, model that should be trained
@@ -26,15 +30,16 @@ def get_parser() -> argparse.ArgumentParser:
 
     mode_parsers = argparser.add_subparsers(dest='mode')
 
+    # Test mode {{{
     test_mode_parser = mode_parsers.add_parser(
             'test',
             help='Train the model',
-            description='Train a new or loaded model',
+            description='Train a loaded model from the saved_models folder (by default "default_model" is used',
             epilog='Find more info at https://github.com/lrshsl/RtoV')
     test_mode_parser.add_argument(
             '-m', '--model',
             dest='load_model',
-            help='Which model to test (from the saved_models folder)',
+            help='Which model to test (from the saved_models folder, without extension)',
             type=str,
             default=None,
             required=False)
@@ -46,6 +51,13 @@ def get_parser() -> argparse.ArgumentParser:
             default=True,
             required=False)
     test_mode_parser.add_argument(
+            '--hide-plot',
+            dest='hide_plot',
+            help='Hide plotting window',
+            action='store_true',
+            default=False,
+            required=False)
+    test_mode_parser.add_argument(
             '-o', '--output',
             dest='result_save_path',
             help='Which file to save the results to',
@@ -53,9 +65,16 @@ def get_parser() -> argparse.ArgumentParser:
             default=None,
             required=False)
     test_mode_parser.add_argument(
-            '-n', '--num-images',
-            dest='num_images',
-            help='Number of images to use for the testing',
+            '--batch-size',
+            dest='batch_size',
+            help='Batch size',
+            type=int,
+            default=4,
+            required=False)
+    test_mode_parser.add_argument(
+            '-n', '--num-samples',
+            dest='total_num_samples',
+            help='Number of samples to use for the testing',
             type=int,
             default=2000,
             required=False)
@@ -66,8 +85,9 @@ def get_parser() -> argparse.ArgumentParser:
             type=int,
             default=8,
             required=False)
-    # test_mode_parser.set_defaults(mode='test')
+    # }}}
 
+    # Train mode {{{
     train_mode_parser = mode_parsers.add_parser(
             'train',
             help='Train the model',
@@ -87,8 +107,24 @@ def get_parser() -> argparse.ArgumentParser:
             type=argparse.FileType('wb'),
             default=None,
             required=False)
-    # train_mode_parser.set_defaults(mode='train')
 
+    train_mode_parser.add_argument(
+            '-e', '--epochs',
+            dest='num_epochs',
+            help='Number of epochs',
+            type=int,
+            default=10,
+            required=False)
+    train_mode_parser.add_argument(
+            '-lr', '--learning-rate',
+            dest='learning_rate',
+            help='Learning rate',
+            type=float,
+            default=0.0001,
+            required=False)
+    # }}}
+
+    # Convert mode {{{
     convert_mode_parser: argparse.ArgumentParser = mode_parsers.add_parser(
             'convert',
             help='Convert a raster image to a vector',
@@ -104,6 +140,6 @@ def get_parser() -> argparse.ArgumentParser:
         help='Output image',
         type=argparse.FileType('wb'),
         required=True)
-    # convert_mode_parser.set_defaults(mode='convert')
+    # }}}
 
     return argparser

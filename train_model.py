@@ -1,12 +1,13 @@
 
-from rtov.lazy_dataset import LazyDataset
-from rtov.model import RtoVMainModel
-import constants
-
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from typing import Optional, assert_type
+
+from rtov.lazy_dataset import LazyDataset
+from rtov.model import RtoVMainModel
+from model_analytics import ModelAnalytics
+import constants
 
 
 _transform = transforms.Compose([

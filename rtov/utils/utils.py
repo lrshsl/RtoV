@@ -8,3 +8,21 @@ def tensor2image(tensor: torch.Tensor) -> np.ndarray:
     image = np.transpose(image, (1, 2, 0))  # From CHW to HWC   ( Height-Width-Channel )
     return image
 
+
+
+import os
+import constants
+
+def to_model_path(model_name: str) -> str:
+    return os.path.join(constants.SAVED_MODELS_DIR, model_name + '.pth')
+
+
+
+from torchvision import transforms
+
+transform_fn = transforms.Compose([
+    # torchvision.transforms.Resize((32, 32)),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+

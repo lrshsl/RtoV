@@ -18,11 +18,13 @@ def main() -> None:
     elif args.mode == 'test':
         from test_model import test_model, TestParameters
         test_model(
-            _load_model = args.load_model,
-            num_images=args.num_images,
+            load_model = args.load_model,
             test_parameters = TestParameters(
-                num_workers = args.num_workers),
+                num_workers = args.num_workers,
+                batch_size = args.batch_size,
+                total_num_samples = args.total_num_samples),
             show_examples=args.show_examples,
+            hide_plot=args.hide_plot,
             result_save_path = args.result_save_path
         )
     # elif args.mode == 'convert':
