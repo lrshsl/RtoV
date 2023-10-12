@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Type
 from abc import ABC
 
 import torch
@@ -52,23 +52,29 @@ def get_dataset(parameters: ModelParameters) -> LazyDataset:
             transform = utils.transform_fn)
 
 
-def get_model(load_model: Optional[str] = None) -> nn.Module:
-    nnmodel: nn.Module = RtoVMainModel()
+def get_model(base_model: Optional[str] = None,
+              model_type: Type[nn.Module] = RtoVMainModel,
+              ) -> nn.Module:
+    """Load a model. If no path is given, use the default model."""
 
-    # If no path is given, use the default
-    if load_model is None:
-        load_model = constants.DEFAULT_MODEL
+    # Create a model instance
+    nnmodel: nn.Module = model_type()
+
+    # If no path is given, return the new model
+    if base_model is None:
+        print(f'---<< [Log] Using new model >>--')
+        return nnmodel
 
     # Make the name to a path ('m1' -> 'saved_models/m1.pth')
-    load_model_path = utils.to_model_path(load_model)
+    load_model_path = utils.to_model_path(base_model)
 
     # If it doesn't exist, throw an error
     if not os.path.exists(load_model_path):
         raise FileNotFoundError(f'No model found at {load_model_path}')
-    
+
     # Load the model
     nnmodel.load_state_dict(torch.load(load_model_path)['model_state_dict'])
-    print(f'---<< [Log] Model from {load_model_path} loaded >>--')
+    print(f'---<< [Log] Using model from {load_model_path} >>--')
 
     # Return it
     return nnmodel

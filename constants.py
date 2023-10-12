@@ -12,4 +12,4 @@ SHAPE_SPEC_MAX_SIZE: int = 6        # Triangle: 3 corners, x and y each
 
 
 SHAPE_LOSS_FN: nn.Module = nn.CrossEntropyLoss()
-POINT_LOSS_FN: nn.Module = nn.CrossEntropyLoss()
+POINT_LOSS_FN: nn.Module = nn.MSELoss()

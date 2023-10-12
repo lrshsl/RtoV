@@ -1,7 +1,5 @@
-from typing import Optional
-import numpy as np
+from typing import Optional, Type
 
-import torch
 from torch import nn
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -11,7 +9,6 @@ from model_analytics import ModelAnalytics
 from rtov.model import RtoVMainModel
 from model_utils import ModelParameters, get_dataloader, get_dataset
 from model_utils import get_model, load_checkpoint, save_checkpoint
-import rtov.utils.utils as utils
 import constants
 
 
@@ -39,13 +36,16 @@ class TrainParameters(ModelParameters):
 # }}}
 
 
-# {{{
+# [public] train_model {{{
 def train_model(base_model: Optional[str],
                 train_parameters: TrainParameters = TrainParameters(),
                 hide_plot: bool = True,
                 model_save_name: Optional[str] = None,
                 ) -> None:
     """Train a model and show some statistics."""
+
+    create_new_model: bool = base_model is None
+    model_type: Type[nn.Module] = RtoVMainModel
 
     # -- Prepare -- #
 
@@ -56,7 +56,7 @@ def train_model(base_model: Optional[str],
     dataloader: DataLoader = get_dataloader(dataset, train_parameters)
 
     # Model
-    nnmodel: nn.Module = get_model(base_model)
+    nnmodel: nn.Module = get_model(base_model, model_type)
 
     # Optimizer
     optimizer: optim.SGD = optim.SGD(nnmodel.parameters(),
@@ -70,27 +70,29 @@ def train_model(base_model: Optional[str],
     nnmodel.train()
 
     # Load checkpoint
-    checkpoint = load_checkpoint(model_save_name)
+    checkpoint: dict = load_checkpoint(model_save_name)
 
     # Train once
-    train(nnmodel, optimizer, dataloader, train_parameters, checkpoint)
+    _train(nnmodel, optimizer, dataloader, train_parameters, checkpoint, epochs_done = 0)
 
     # Show examples
     if not hide_plot:
-        show_examples(nnmodel, dataloader, train_parameters)
+        _show_examples(nnmodel, dataloader, train_parameters)
 
     # Continue training as long as the user wants
     while input("Continue training? (y/N): ") == "y":
 
-        # Ask for the number of epochs
+        # Adapt parameters
+        epochs_done: int = train_parameters.epochs
         train_parameters.epochs = int(input("How many epochs: "))
-         
+        train_parameters.learning_rate = float(input("Learning rate (default: 0.00005): "))
+
         # Train
-        train(nnmodel, optimizer, dataloader, train_parameters, checkpoint)
+        _train(nnmodel, optimizer, dataloader, train_parameters, checkpoint, epochs_done)
 
         # Show examples
         if not hide_plot:
-            show_examples(nnmodel, dataloader, train_parameters)
+            _show_examples(nnmodel, dataloader, train_parameters)
 
     # Save
     if model_save_name is None and input("Save model? (y/N): ") == "y":
@@ -104,13 +106,17 @@ def train_model(base_model: Optional[str],
                         checkpoint,
                         additional_epochs = train_parameters.epochs,
                         save_name = model_save_name)
+# }}}
 
 
-def train(model: nn.Module,
-          optimizer: optim.SGD,
-          dataloader: DataLoader,
-          parameters: TrainParameters,
-          checkpoint: dict) -> tuple[list[float], list[float]]:
+# _train {{{
+def _train(model: nn.Module,
+           optimizer: optim.SGD,
+           dataloader: DataLoader,
+           parameters: TrainParameters,
+           checkpoint: dict,
+           epochs_done: int,
+           ) -> tuple[list[float], list[float]]:
     """Train the model."""
 
     # Collections for the loss data
@@ -118,7 +124,7 @@ def train(model: nn.Module,
     points_losses = []
     # color_losses = []
 
-    start_epoch = checkpoint['epoch']
+    start_epoch = checkpoint['epoch'] + epochs_done
     for epoch in range(start_epoch, start_epoch + parameters.epochs):
 
         # Zero the running losses
@@ -163,10 +169,11 @@ def train(model: nn.Module,
         points_losses.append(epoch_points_loss)
 
     return shape_losses, points_losses
+# }}}
 
 
-
-def show_examples(nnmodel: nn.Module,
+# _show_examples {{{
+def _show_examples(nnmodel: nn.Module,
                  dataloader: DataLoader,
                  train_parameters: TrainParameters) -> None:
     """Show some examples in a plot."""
@@ -177,6 +184,7 @@ def show_examples(nnmodel: nn.Module,
         dataloader = dataloader,
         batch_size = train_parameters.batch_size)
     analytics.show_examples(result_save_path=None, hide=False)
+# }}}
 
 
 

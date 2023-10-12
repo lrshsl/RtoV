@@ -2,9 +2,11 @@ from typing import Optional
 from torch import nn
 
 from torch.utils.data import DataLoader
+
 from rtov.lazy_dataset import LazyDataset
 from model_analytics import ModelAnalytics
 from model_utils import ModelParameters, get_dataloader, get_dataset, get_model
+import constants
 
 
 # TestParameters {{{
@@ -28,7 +30,7 @@ class TestParameters(ModelParameters):
 # }}}
 
 # test_model {{{
-def test_model(load_model: Optional[str] = None,
+def test_model(base_model: Optional[str] = None,
                test_parameters: TestParameters = TestParameters(),
                hide_plot: bool = False,
                demonstration_save_path: Optional[str] = None,
@@ -44,7 +46,9 @@ def test_model(load_model: Optional[str] = None,
     dataloader: DataLoader = get_dataloader(dataset, test_parameters)
 
     # Model
-    nnmodel: nn.Module = get_model(load_model)
+    if base_model is None:
+        base_model = constants.DEFAULT_MODEL
+    nnmodel: nn.Module = get_model(base_model)
 
 
     # -- Evaluate -- #
