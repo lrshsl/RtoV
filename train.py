@@ -209,6 +209,8 @@ for epoch in range(start_epoch, start_epoch + N_EPOCHS):
 
         # Forward call
         shape_out, points_out = net(inputs)
+
+        # Loss
         shape_loss = shape_loss_fn(shape_out, shape_labels)
         points_loss = points_loss_fn(points_out, point_labels)
 
@@ -231,7 +233,6 @@ for epoch in range(start_epoch, start_epoch + N_EPOCHS):
     print(f'[{epoch + 1:3}] shape loss: {epoch_shape_loss:.3f}, points loss: {epoch_points_loss:.3f}')
     shape_losses.append(epoch_shape_loss)
     points_losses.append(epoch_points_loss)
-    running_loss = 0.0
 
 
 plt.plot(shape_losses)
@@ -335,7 +336,7 @@ print('Finished testing')
 
 # Save model {{{
 if input("Save the model? [y/N]") == 'y':
-    # Save the model
+    # Save the mode
     checkpoint = {
         'model_state_dict': net.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),

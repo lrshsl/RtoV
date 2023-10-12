@@ -9,7 +9,6 @@ from typing import Optional
 
 from rtov.utils.shapes import draw_shape, Shapes, SHAPE_NAMES
 import rtov.utils.utils as utils
-import constants
 
 class ModelAnalytics:
     model: nn.Module
@@ -94,10 +93,11 @@ class ModelAnalytics:
         print(f'Points error: {self.points_error} / {num_samples} --> {self.points_error / num_samples} px per shape')
         if self.running_sample_count != num_samples:
             print(f"[Error] Expected {num_samples} samples to be processed, got {self.running_sample_count}")
-    # }}}
 
 
     def _print_performance_once(self, nbatches: int, num_samples: int) -> bool:
+
+        # Go through the batches
         for i, batch_data in enumerate(self.dataloader):
 
             # Unpack data
@@ -122,6 +122,7 @@ class ModelAnalytics:
 
         # Not necessarily done
         return True
+    # }}}
 
     # [public] show_examples {{{
     def show_examples(self, result_save_path: str | None, hide: bool) -> None:
