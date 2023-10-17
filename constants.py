@@ -1,7 +1,7 @@
 
 from torch import nn
 
-from rtov.utils.vec import Vec3
+from utils.vecs import Vec3
 
 DEFAULT_MODEL: str = 'default_model'
 SAVED_MODELS_DIR: str = 'saved_models'

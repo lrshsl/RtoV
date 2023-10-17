@@ -7,8 +7,8 @@ import itertools as itt
 
 from typing import Optional
 
-from rtov.utils.shapes import draw_shape, Shapes, SHAPE_NAMES
-import rtov.utils.utils as utils
+from utils.shapes import draw_shape, Shapes, SHAPE_NAMES
+import utils.utils as utils
 
 class ModelAnalytics:
     model: nn.Module

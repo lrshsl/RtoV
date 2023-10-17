@@ -1,4 +1,3 @@
-from torch import Tensor
 
 import numpy as np
 import cv2

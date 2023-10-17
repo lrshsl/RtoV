@@ -8,9 +8,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 
 import constants
-from rtov.model import RtoVMainModel
-from rtov.lazy_dataset import LazyDataset
-import rtov.utils.utils as utils
+from model.model import RtoVMainModel
+from data.lazy_dataset import LazyDataset
+import utils.utils as utils
 
 # ModelParameters {{{
 class ModelParameters(ABC):

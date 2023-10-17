@@ -1,8 +1,7 @@
-from __future__ import annotations
 
-from rtov.draw_shape_on_image import draw_on_image
-from rtov.utils.shapes import SHAPE_NAMES, Shapes
-from rtov.utils.vec import Vec3
+from data.draw_shape_on_image import draw_on_image
+from utils.shapes import Shapes
+from utils.vecs import Vec3
 import constants
 
 from torch.utils.data import Dataset
@@ -14,6 +13,7 @@ class LazyDataset(Dataset):
     features: np.ndarray
     tensor: np.ndarray
 
+    # __init__ {{{
     def __init__(self, img_dim: Vec3,
                  num_samples, transform=None,
                  seed: Optional[Callable[[], int]] = None,
@@ -23,11 +23,13 @@ class LazyDataset(Dataset):
         self.features = np.zeros(img_dim.as_int_tuple(), dtype=np.uint8)
         self.tensor = np.zeros(img_dim.as_int_tuple(), dtype=np.uint8)
         self.seed = seed
-        self.pad = pad
+        self.pad = pad # }}}
 
-    def __len__(self):
-        return self.num_samples
+    # __len__ {{{
+    def __len__(self) -> int:
+        return self.num_samples # }}}
 
+    # __getitem__ {{{
     def __getitem__(self, _) -> tuple[np.ndarray, Shapes, np.ndarray]:
         self.features[:] = np.full(self.features.shape, 255, dtype=np.uint8)    # Overwrite the memory directly to (hopefully) reduce memory => fewer GC cycles
         # shape = np.random.choice(shape_names)
@@ -44,5 +46,5 @@ class LazyDataset(Dataset):
             #   DataLoader uses pointers, which are referenced per-batch, not directly after the call
             #   If overwritten, the pointers all point to the last element by the time they are accessed
         # TODO: Calc size + first point
-        return self.tensor, shape, pts
+        return self.tensor, shape, pts # }}}
 

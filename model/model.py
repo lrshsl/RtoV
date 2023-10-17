@@ -1,13 +1,16 @@
 import torch
 from torch import nn
 
-from rtov.utils.shapes import Shapes
+from utils.shapes import Shapes
 import constants
 
 class RtoVMainModel(torch.nn.Module):
+
     # Layers {{{
     def __init__(self):
         super().__init__()
+
+        # Convolution layers
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 6, 5),
             nn.ReLU(),
@@ -18,6 +21,8 @@ class RtoVMainModel(torch.nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
         )
+
+        # Fully connected layers for shape prediction
         self.shape_fc = nn.Sequential(
             nn.Linear(16 * 5 * 5, 120),
             nn.Linear(120, 84),
@@ -25,34 +30,25 @@ class RtoVMainModel(torch.nn.Module):
             nn.ReLU(),
             nn.Linear(10, len(Shapes)),
         )
-        self.circle_out = 3
-        self.line_out = 5
-        self.triangle_out = 6
-        self.rectangle_out = 5
-        self.fc_circle = nn.Sequential(
-            nn.Linear(16 * 5 * 5, 120),
-            nn.Linear(120, 84),
-            nn.Linear(84, 10),
-            nn.Linear(10, self.circle_out),        # Center coordinates + radius -> 3 numbers
+
+        # Output sizes of the shapes layers
+        self.circle_out = 3        # Center coordinates + radius -> 3 numbers
+        self.line_out = 5          # Two endpoints for line + width -> 5 coordinates
+        self.triangle_out = 6      # Three points for triangle -> 6 coordinates
+        self.rectangle_out = 5     # One point + width + height + orientation -> 5 numbers
+
+        # Separate layers for each shape
+        mk_pt_layer = lambda out: (
+                nn.Sequential(
+                    nn.Linear(16 * 5 * 5, 120),
+                    nn.Linear(120, 84),
+                    nn.Linear(84, 10),
+                    nn.Linear(10, out))
         )
-        self.fc_line = nn.Sequential(
-            nn.Linear(16 * 5 * 5, 120),
-            nn.Linear(120, 84),
-            nn.Linear(84, 10),
-            nn.Linear(10, self.line_out),          # Two endpoints for line + width -> 5 coordinates
-        )
-        self.fc_triangle = nn.Sequential(
-            nn.Linear(16 * 5 * 5, 120),
-            nn.Linear(120, 84),
-            nn.Linear(84, 10),
-            nn.Linear(10, self.triangle_out),      # Three points for triangle -> 6 coordinates
-        )
-        self.fc_rectangle = nn.Sequential(
-            nn.Linear(16 * 5 * 5, 120),
-            nn.Linear(120, 84),
-            nn.Linear(84, 10),
-            nn.Linear(10, self.rectangle_out),     # One point + width + height + orientation -> 5 numbers
-        )
+        self.fc_circle = mk_pt_layer(self.circle_out)
+        self.fc_line = mk_pt_layer(self.line_out)
+        self.fc_triangle = mk_pt_layer(self.triangle_out)
+        self.fc_rectangle = mk_pt_layer(self.rectangle_out)
     # }}}
 
     # Forward {{{

@@ -4,9 +4,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 import torch.optim as optim
 
-from rtov.lazy_dataset import LazyDataset
+from data.lazy_dataset import LazyDataset
 from model_analytics import ModelAnalytics
-from rtov.model import RtoVMainModel
+from model.model import RtoVMainModel
 from model_utils import ModelParameters, get_dataloader, get_dataset
 from model_utils import get_model, load_checkpoint, save_checkpoint
 import constants
@@ -44,7 +44,6 @@ def train_model(base_model: Optional[str],
                 ) -> None:
     """Train a model and show some statistics."""
 
-    create_new_model: bool = base_model is None
     model_type: Type[nn.Module] = RtoVMainModel
 
     # -- Prepare -- #
@@ -108,7 +107,6 @@ def train_model(base_model: Optional[str],
                         save_name = model_save_name)
 # }}}
 
-
 # _train {{{
 def _train(model: nn.Module,
            optimizer: optim.SGD,
@@ -170,7 +168,6 @@ def _train(model: nn.Module,
 
     return shape_losses, points_losses
 # }}}
-
 
 # _show_examples {{{
 def _show_examples(nnmodel: nn.Module,

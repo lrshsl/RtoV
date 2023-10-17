@@ -3,7 +3,7 @@ from torch import nn
 
 from torch.utils.data import DataLoader
 
-from rtov.lazy_dataset import LazyDataset
+from data.lazy_dataset import LazyDataset
 from model_analytics import ModelAnalytics
 from model_utils import ModelParameters, get_dataloader, get_dataset, get_model
 import constants
