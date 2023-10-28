@@ -31,7 +31,7 @@ class LazyDataset(Dataset):
 
     # __getitem__ {{{
     def __getitem__(self, _) -> tuple[np.ndarray, Shapes, np.ndarray]:
-        self.features[:] = np.full(self.features.shape, 255, dtype=np.uint8)    # Overwrite the memory directly to (hopefully) reduce memory => fewer GC cycles
+        self.features = np.full(self.features.shape, 255, dtype=np.uint8)    # Overwrite the memory directly to (hopefully) reduce memory => fewer GC cycles
         # shape = np.random.choice(shape_names)
         shape = np.random.choice(list(Shapes))
         pts = np.zeros(constants.SHAPE_SPEC_MAX_SIZE, dtype=np.float32)
