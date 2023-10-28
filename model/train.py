@@ -5,10 +5,10 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 
 from data.lazy_dataset import LazyDataset
-from model_analytics import ModelAnalytics
+from model.model_analytics import ModelAnalytics
 from model.model import RtoVMainModel
-from model_utils import ModelParameters, get_dataloader, get_dataset
-from model_utils import get_model, load_checkpoint, save_checkpoint
+from model.model_utils import ModelParameters, get_dataloader, get_dataset
+from model.model_utils import get_model, load_checkpoint, save_checkpoint
 import constants
 
 
