@@ -7,7 +7,7 @@ def main() -> None:
 
     # Train mode
     if args.mode == 'train':
-        from model.train import train_model, TrainParameters
+        from rtov.train import train_model, TrainParameters
         train_model(
             base_model = args.base_model,
             train_parameters = TrainParameters(
@@ -23,7 +23,7 @@ def main() -> None:
 
     # Test / evaluation mode
     elif args.mode == 'test':
-        from model.test import test_model, TestParameters
+        from rtov.test import test_model, TestParameters
         test_model(
             base_model = args.load_model,
             test_parameters = TestParameters(
