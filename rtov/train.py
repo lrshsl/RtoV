@@ -8,7 +8,7 @@ from data.lazy_dataset import LazyDataset
 from model.model_analytics import ModelAnalytics
 from model.model import RtoVMainModel
 from model.model_utils import ModelParameters, get_dataloader, get_dataset
-from model.model_utils import get_model, load_checkpoint, save_checkpoint
+from model.model_utils import load_model, load_checkpoint, save_checkpoint
 import constants
 
 
@@ -55,7 +55,7 @@ def train_model(base_model: Optional[str],
     dataloader: DataLoader = get_dataloader(dataset, train_parameters)
 
     # Model
-    nnmodel: nn.Module = get_model(base_model, model_type)
+    nnmodel: nn.Module = load_model(base_model, model_type)
 
     # Optimizer
     optimizer: optim.SGD = optim.SGD(nnmodel.parameters(),

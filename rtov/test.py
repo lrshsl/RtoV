@@ -1,11 +1,10 @@
 from typing import Optional
 from torch import nn
-
 from torch.utils.data import DataLoader
 
 from data.lazy_dataset import LazyDataset
 from model.model_analytics import ModelAnalytics
-from model.model_utils import ModelParameters, get_dataloader, get_dataset, get_model
+from model.model_utils import ModelParameters, get_dataloader, get_dataset, load_model
 import constants
 
 
@@ -48,7 +47,7 @@ def test_model(base_model: Optional[str] = None,
     # Model
     if base_model is None:
         base_model = constants.DEFAULT_MODEL
-    nnmodel: nn.Module = get_model(base_model)
+    nnmodel: nn.Module = load_model(base_model)
 
 
     # -- Evaluate -- #
