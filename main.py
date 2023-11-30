@@ -35,9 +35,14 @@ def main() -> None:
         )
 
     # Conversion / execution mode
-    # elif args.mode == 'convert':
-        # from convert import convert
-        # convert(args)
+    elif args.mode == 'convert':
+        from rtov.convert import convert_image
+        convert_image(
+            input_image_path = args.input_image,
+            output_path = args.output_image,
+            output_format = args.output_format,
+            model = args.model
+        )
 
 
 if __name__ == '__main__':

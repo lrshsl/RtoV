@@ -19,14 +19,10 @@ class Shapes(enum.IntEnum):
     @classmethod
     def from_int(cls, n: int) -> Self:
         match n:
-            case 0:
-                return Shapes.Circle
-            case 1:
-                return Shapes.Line
-            case 2:
-                return Shapes.Triangle
-            case 3:
-                return Shapes.Rectangle
+            case 0: return Shapes.Circle
+            case 1: return Shapes.Line
+            case 2: return Shapes.Triangle
+            case 3: return Shapes.Rectangle
             case _:
                 raise ValueError(f'Unknown shape: {n}')
 # }}}

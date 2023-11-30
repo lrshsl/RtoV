@@ -26,6 +26,14 @@ def get_parser() -> argparse.ArgumentParser:
         learning_rate: float, learning rate
         learning_momentum: float, learning momentum
         # weight_decay: float, weight decay
+
+
+    mode == 'convert'
+        input_image: str, relative path to input image
+        output_image: str, relative path to output image
+        input_format: str, input image format (SVG)
+        output_format: str, output image format (png, jpg)
+        model: str, model that should be used for the conversion
     """
     argparser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='rtov',
@@ -64,7 +72,7 @@ def get_parser() -> argparse.ArgumentParser:
             '-o', '--output',
             dest='result_save_path',
             help='Which file to save the results to',
-            type=argparse.FileType('wb'),
+            type=str,
             default=None,
             required=False)
 
@@ -117,7 +125,7 @@ def get_parser() -> argparse.ArgumentParser:
             '-o', '--output',
             dest='model_save_path',
             help='Where to save the trained model',
-            type=argparse.FileType('wb'),
+            type=str,
             default=None,
             required=False)
 
@@ -187,23 +195,31 @@ def get_parser() -> argparse.ArgumentParser:
     # }}}
 
     # Convert mode {{{
-
-    # FIX: Not yet implemented
-    # convert_mode_parser: argparse.ArgumentParser = mode_parsers.add_parser(
-    #         'convert',
-    #         help='Convert a raster image to a vector',
-    #         description='Convert a raster image to a vector',
-    #         epilog='Find more info at https://github.com/lrshsl/RtoV')
-    # convert_mode_parser.add_argument(
-    #         'input_image',
-    #         help='Input image',
-    #         type=argparse.FileType('rb'))
-    # convert_mode_parser.add_argument(
-    #     '-o', '--output',
-    #     dest='output_image',
-    #     help='Output image',
-    #     type=argparse.FileType('wb'),
-    #     required=True)
+    convert_mode_parser: argparse.ArgumentParser = mode_parsers.add_parser(
+            'convert',
+            help='Convert a raster image to a vector',
+            description='Convert a raster image to a vector',
+            epilog='Find more info at https://github.com/lrshsl/RtoV')
+    convert_mode_parser.add_argument(
+            'input_image',
+            help='Input image',
+            type=str)
+    convert_mode_parser.add_argument(
+        '-o', '--output',
+        dest='output_image',
+        help='Output image',
+        type=str,
+        required=True)
+    convert_mode_parser.add_argument(
+        '-t', '--to',
+        dest='output_format',
+        help='Output format',
+        choices=['svg'])
+    convert_mode_parser.add_argument(
+        '-m', '--model',
+        dest='model',
+        help='Model',
+        type=str)
     # }}}
 
     return argparser
