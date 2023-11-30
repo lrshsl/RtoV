@@ -13,3 +13,14 @@ SHAPE_SPEC_MAX_SIZE: int = 6        # Triangle: 3 corners, x and y each
 
 SHAPE_LOSS_FN: nn.Module = nn.CrossEntropyLoss()
 POINT_LOSS_FN: nn.Module = nn.MSELoss()
+
+
+ColorTuple = tuple[int, int, int]
+
+class Color:
+    WHITE: ColorTuple = (255, 255, 255)
+    BLACK: ColorTuple = (0, 0, 0)
+
+    RED: ColorTuple = (0, 0, 255)
+    GREEN: ColorTuple = (0, 255, 0)
+    BLUE: ColorTuple = (255, 0, 0)
