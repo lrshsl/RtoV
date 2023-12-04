@@ -8,7 +8,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 
 import constants
-from model.model import RtoVMainModel
+from model.model import RtoVMainModel, RtoVLargeModel
 from data.lazy_dataset import LazyDataset
 import utils.utils as utils
 
@@ -52,7 +52,15 @@ def get_dataset(parameters: ModelParameters) -> LazyDataset:
             transform = utils.transform_fn)
 
 
-def get_model(base_model: Optional[str] = None,
+def str2model_type(model_name: Optional[str]) -> Type[nn.Module]:
+    """Convert a string to a model type."""
+    match model_name:
+        case None: return RtoVMainModel
+        case "main": return RtoVMainModel
+        case "large": return RtoVLargeModel
+    raise ValueError(f"Invalid model name '{model_name}', available models are 'main' and 'large'")
+
+def load_model(base_model: Optional[str] = None,
               model_type: Type[nn.Module] = RtoVMainModel,
               ) -> nn.Module:
     """Load a model. If no path is given, use the default model."""
@@ -62,7 +70,7 @@ def get_model(base_model: Optional[str] = None,
 
     # If no path is given, return the new model
     if base_model is None:
-        print(f'---<< [Log] Using new model >>--')
+        print(f'---<< [Log] Using a new [{model_type.__name__}] model >>--')
         return nnmodel
 
     # Make the name to a path ('m1' -> 'saved_models/m1.pth')

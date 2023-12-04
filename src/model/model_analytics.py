@@ -8,7 +8,9 @@ import itertools as itt
 from typing import Optional
 
 from utils.shapes import draw_shape, Shapes, SHAPE_NAMES
+from utils.utils import PlotType
 import utils.utils as utils
+
 
 class ModelAnalytics:
     model: nn.Module
@@ -43,7 +45,7 @@ class ModelAnalytics:
                  yield img, shape, pt, shape_pred, pt_pred
     # }}}
 
-    # Plotting {{{
+    # Plotting Helper Functions {{{
     def _prepare_plot(self) -> tuple:
         """Prepare the plotting window."""
         cols, rows = 5, 4
@@ -125,21 +127,24 @@ class ModelAnalytics:
     # }}}
 
     # [public] show_examples {{{
-    def show_examples(self, result_save_path: str | None, hide: bool) -> None:
+    def show_examples(self,
+                      result_save_path: str | None,
+                      hide: bool,
+                      plot_type: PlotType = PlotType.Pairs) -> None:
         """Plot the labels and predictions pairwise next to each other."""
 
         # Prepare the plotting window
         _, axis = self._prepare_plot()
 
-        num_image_pairs: int = 2 * 4        # 8 label-prediction pairs
+        num_image_pairs: int = 8        # 2 * 4 = 8 label-prediction pairs
 
-        # Create an iterator
+        # Create an iterator over the data
         labels_and_predictions = self._unpack_and_predict(self.dataloader, self.model)
 
         # Go through each image spot
         for i in range(num_image_pairs):
 
-            # Unpack data from the iterator
+            # Unpack the data from the iterator
             org_images, shape_labels, point_labels, shape_preds, points_preds = next(labels_and_predictions)
 
             # Where to put the image

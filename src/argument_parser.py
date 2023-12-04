@@ -13,12 +13,14 @@ def get_parser() -> argparse.ArgumentParser:
         hide_plot: bool, hide plotting window
         result_save_path: str, path to save the results to (if not given, don't save)
         batch_size: int, batch size
-        total_num_samples: int, total number of samples
+        num_samples: int, total number of samples
         num_workers: int, number of workers
 
     mode == 'train'
         base_model: str, model that should be trained
+        model_type: str, type of a new model. Only if the base_model is not given
         model_save_path: str, path to save the model to (if not given, don't save)
+        num_samples: int, number of samples per epoch
         num_workers: int, number of workers
         hide_plot: bool, don't show the plotting window at the end
         num_epochs: int, number of epochs
@@ -45,8 +47,8 @@ def get_parser() -> argparse.ArgumentParser:
     # Test mode {{{
     test_mode_parser = mode_parsers.add_parser(
             'test',
-            help='Train the model',
-            description='Train a loaded model from the saved_models folder (by default "default_model" is used',
+            help='Test the model',
+            description='Test a loaded model from the saved_models folder (by default "default_model" is used)',
             epilog='Find more info at https://github.com/lrshsl/RtoV')
 
     # Model
@@ -54,6 +56,15 @@ def get_parser() -> argparse.ArgumentParser:
             '-m', '--model',
             dest='load_model',
             help='Which model to test (from the saved_models folder, without extension)',
+            type=str,
+            default=None,
+            required=False)
+
+    # Model type
+    test_mode_parser.add_argument(
+            '-t', '--model-type',
+            dest='model_type',
+            help='Type of a new model. Only if the base_model is not given',
             type=str,
             default=None,
             required=False)
@@ -78,17 +89,17 @@ def get_parser() -> argparse.ArgumentParser:
 
     # Batch size
     test_mode_parser.add_argument(
-            '--batch-size',
+            '-b', '--batch-size',
             dest='batch_size',
             help='Batch size',
             type=int,
             default=4,
             required=False)
 
-    # Number samples
+    # Number of samples
     test_mode_parser.add_argument(
             '-n', '--num-samples',
-            dest='total_num_samples',
+            dest='num_samples',
             help='Number of samples to use for the testing',
             type=int,
             default=2000,
@@ -120,6 +131,15 @@ def get_parser() -> argparse.ArgumentParser:
             default=None,
             required=False)
 
+    # Model type
+    train_mode_parser.add_argument(
+            '-t', '--model-type',
+            dest='model_type',
+            help='Type of a new model. Only if the base_model is not given',
+            type=str,
+            default=None,
+            required=False)
+
     # Model save path
     train_mode_parser.add_argument(
             '-o', '--output',
@@ -127,6 +147,15 @@ def get_parser() -> argparse.ArgumentParser:
             help='Where to save the trained model',
             type=str,
             default=None,
+            required=False)
+
+    # Number of samples
+    train_mode_parser.add_argument(
+            '-n', '--num-samples',
+            dest='num_samples',
+            help='Number of samples per epoch',
+            type=int,
+            default=2000,
             required=False)
 
     # Number of workers
@@ -200,26 +229,45 @@ def get_parser() -> argparse.ArgumentParser:
             help='Convert a raster image to a vector',
             description='Convert a raster image to a vector',
             epilog='Find more info at https://github.com/lrshsl/RtoV')
+
+    # Input image
     convert_mode_parser.add_argument(
             'input_image',
             help='Input image',
             type=str)
+
+    # Output image
     convert_mode_parser.add_argument(
         '-o', '--output',
         dest='output_image',
         help='Output image',
         type=str,
         required=True)
+
+    # Output format
     convert_mode_parser.add_argument(
-        '-t', '--to',
+        '-f', '--format',
         dest='output_format',
         help='Output format',
-        choices=['svg'])
+        choices=['svg'],
+        default='svg',
+        required=False)
+
+    # Model
     convert_mode_parser.add_argument(
         '-m', '--model',
         dest='model',
         help='Model',
-        type=str)
+        type=str,
+        required=False)
+
+    # Model type
+    convert_mode_parser.add_argument(
+        '-t', '--model-type',
+        dest='model_type',
+        help='Model type',
+        type=str,
+        required=False)
     # }}}
 
     return argparser

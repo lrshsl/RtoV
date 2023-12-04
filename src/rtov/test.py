@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from data.lazy_dataset import LazyDataset
 from model.model_analytics import ModelAnalytics
 from model.model_utils import ModelParameters, get_dataloader, get_dataset, load_model
+from model.model_utils import str2model_type
 import constants
 
 
@@ -23,9 +24,9 @@ class TestParameters(ModelParameters):
     def __init__(self,
                  num_workers: int = 8,
                  batch_size: int = 4,
-                 total_num_samples: int = 2000,
+                 num_samples: int = 2000,
                  ) -> None:
-        super().__init__(num_workers, batch_size, total_num_samples)
+        super().__init__(num_workers, batch_size, num_samples)
 # }}}
 
 # test_model {{{
@@ -33,6 +34,7 @@ def test_model(base_model: Optional[str] = None,
                test_parameters: TestParameters = TestParameters(),
                hide_plot: bool = False,
                demonstration_save_path: Optional[str] = None,
+               model_type_str: Optional[str] = None
                ) -> None:
     """Evaluate the model and show random examples."""
 
@@ -47,7 +49,7 @@ def test_model(base_model: Optional[str] = None,
     # Model
     if base_model is None:
         base_model = constants.DEFAULT_MODEL
-    nnmodel: nn.Module = load_model(base_model)
+    nnmodel: nn.Module = load_model(base_model, str2model_type(model_type_str))
 
 
     # -- Evaluate -- #

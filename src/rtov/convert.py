@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from PIL import Image
 
-from model.model_utils import load_model
+from model.model_utils import load_model, str2model_type
 import utils.utils as utils
 import utils.shapes as shapes
 import constants
@@ -30,9 +30,9 @@ def display_image(image: np.ndarray):
 
 def convert_image(input_image_path: str,
                   output_path: str,
-                  input_format: str = 'png',
                   output_format: str = 'svg',
-                  model: Optional[str] = None
+                  model: Optional[str] = None,
+                  model_type_str: Optional[str] = None,
                   ) -> None:
     # -- Prepare -- #
 
@@ -47,7 +47,7 @@ def convert_image(input_image_path: str,
     # Load the model
     if model is None:
         model = constants.DEFAULT_MODEL
-    nnmodel: nn.Module = load_model(model)
+    nnmodel: nn.Module = load_model(model, str2model_type(model_type_str))
 
 
     # -- Convert -- #
@@ -61,7 +61,12 @@ def convert_image(input_image_path: str,
     shape_pred = shapes.Shapes.from_int(shape_pred.argmax(dim=1))
 
     # Convert the prediction into an image
-    output_image = utils.specification2svg(input_image_path, shape_pred, shape_data_pred.numpy()[0])
+    match output_format:
+        case 'svg':
+            output_image = utils.specification2svg(
+                    input_image_path, shape_pred, shape_data_pred.numpy()[0])
+        case _:
+            raise NotImplementedError
 
 
     # -- Save the Results -- #
