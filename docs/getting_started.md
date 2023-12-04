@@ -37,6 +37,7 @@ As one can see, there are three different modes for RtoV:
 
 A help menu for each mode can be obtained through running `python3 src/main.py [mode] --help`, where [mode] is the given mode (without brackets).
 
+
 ### Training
 
 For training an existing model (v2 exists by default):
@@ -50,9 +51,22 @@ The number of epochs, images per epoch, learning rate and more can be specified 
 python3 src/main.py train -m v2 -e 20 -n 200 -lr 0.002
 ```
 
+For experimentation with different models, a model type can be specified. Currently, there's only 'main' and 'large':
+```
+# Load the model 'l1' of type 'large' and save it after the training as 'l2'
+python3 src/main.py train -t large -m l1  -o l1
+```
 
 
 ### Testing
+
+Many options of the training can be used here as well. Interesting are the different levels of verbosity through the verbose flag.
+```
+python3 src/main.py  --verbose 0  test  -t large  -m l1
+```
+
+It accepts a integer from 0 to 3 (0 -> quiet, 3 -> very verbose) and has to be positioned befor the mode subcommand, since it applies to all modes.
+
 
 ### Converting
 
