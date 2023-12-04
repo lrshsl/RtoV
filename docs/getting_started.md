@@ -68,8 +68,6 @@ python3 src/main.py  --verbose 0  test  -t large  -m l1
 It accepts a integer from 0 to 3 (0 -> quiet, 3 -> very verbose) and has to be positioned befor the mode subcommand, since it applies to all modes.
 
 
-### Converting
-
 
 
 
