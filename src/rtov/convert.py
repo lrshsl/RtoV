@@ -33,6 +33,7 @@ def convert_image(input_image_path: str,
                   output_format: str = 'svg',
                   model: Optional[str] = None,
                   model_type_str: Optional[str] = None,
+                  verbose: int = 1,
                   ) -> None:
     # -- Prepare -- #
 

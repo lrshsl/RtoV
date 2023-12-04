@@ -1,6 +1,8 @@
 
 import argparse
 
+import constants
+
 
 def get_parser() -> argparse.ArgumentParser:
     """Creates an ArgumentParser for rtov.
@@ -41,6 +43,21 @@ def get_parser() -> argparse.ArgumentParser:
             prog='rtov',
             description='Raster to Vector converter',
             epilog='Find more info at https://github.com/lrshsl/RtoV')
+
+    # Version
+    argparser.add_argument(
+            '-v', '--version',
+            action='version',
+            version='%(prog)s ' + constants.VERSION)
+
+    # Verbose
+    argparser.add_argument(
+            '--verbose',
+            dest='verbose',
+            type=int,
+            default=1,
+            required=False,
+            help='Verbosity level (default: 1)')
 
     mode_parsers = argparser.add_subparsers(dest='mode')
 

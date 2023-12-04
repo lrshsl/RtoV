@@ -42,7 +42,8 @@ def train_model(base_model: Optional[str],
                 train_parameters: TrainParameters = TrainParameters(),
                 hide_plot: bool = True,
                 model_save_name: Optional[str] = None,
-                model_type_str: Optional[str] = None
+                model_type_str: Optional[str] = None,
+                verbose: int = 1
                 ) -> None:
     """Train a model and show some statistics."""
 
@@ -80,7 +81,7 @@ def train_model(base_model: Optional[str],
                 "epoch": 0 }
 
     # Train once
-    _train(nnmodel, optimizer, dataloader, train_parameters, checkpoint, epochs_done = 0)
+    _train(nnmodel, optimizer, dataloader, train_parameters, checkpoint, epochs_done = 0, verbose=verbose)
 
     # Show examples
     if not hide_plot:
@@ -97,7 +98,7 @@ def train_model(base_model: Optional[str],
         train_parameters.learning_rate = float(lr) if lr else 0.00005
 
         # Train
-        _train(nnmodel, optimizer, dataloader, train_parameters, checkpoint, epochs_done)
+        _train(nnmodel, optimizer, dataloader, train_parameters, checkpoint, epochs_done, verbose)
 
         # Show examples
         if not hide_plot:
@@ -124,6 +125,7 @@ def _train(model: nn.Module,
            parameters: TrainParameters,
            checkpoint: dict,
            epochs_done: int,
+           verbose: int,
            ) -> tuple[list[float], list[float]]:
     """Train the model."""
 

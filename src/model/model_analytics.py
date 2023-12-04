@@ -74,7 +74,7 @@ class ModelAnalytics:
     # }}}
 
     # [public] print_model_performance {{{
-    def print_model_performance(self, num_samples: int) -> None:
+    def print_model_performance(self, num_samples: int, verbose: int) -> None:
 
         # Running statistics
         self.correct_shapes: int = 0
@@ -87,17 +87,19 @@ class ModelAnalytics:
         for _ in range(0, num_samples, self.batch_size * len(self.dataloader)):
 
             # Retrieve and process the batches from the dataloader
-            if not self._print_performance_once(nbatches, num_samples):
+            if not self._print_performance_once(nbatches, num_samples, verbose):
                 break
 
         print('\n\n----- Statistics -----\n')
         print(f'Correct shapes: {self.correct_shapes} / {num_samples} --> {self.correct_shapes / num_samples * 100}%')
-        print(f'Points error: {self.points_error} / {num_samples} --> {self.points_error / num_samples} px per shape')
+        print(f'Points error: {self.points_error} / {num_samples} --> {self.points_error / num_samples} pt per shape')
+
+        # Should not occur
         if self.running_sample_count != num_samples:
             print(f"[Error] Expected {num_samples} samples to be processed, got {self.running_sample_count}")
 
 
-    def _print_performance_once(self, nbatches: int, num_samples: int) -> bool:
+    def _print_performance_once(self, nbatches: int, num_samples: int, verbose: int) -> bool:
 
         # Go through the batches
         for i, batch_data in enumerate(self.dataloader):
@@ -111,7 +113,8 @@ class ModelAnalytics:
             # Batch statistics
             batch_correct_shapes = (shape_preds.argmax(dim=1) == torch.Tensor(shapes)).float().sum().item()
             batch_points_error = (points_preds - torch.Tensor(pts)).abs().sum().item()
-            print(f'[Batch {i + 1} / {nbatches}] Correct shapes: {batch_correct_shapes} / {self.batch_size}, Points error: {batch_points_error}')
+            if verbose > 0:
+                print(f'[Batch {i + 1} / {nbatches}] Correct shapes: {batch_correct_shapes} / {self.batch_size}, Points error: {batch_points_error}')
 
             # Update statistics
             self.correct_shapes += batch_correct_shapes

@@ -34,7 +34,8 @@ def test_model(base_model: Optional[str] = None,
                test_parameters: TestParameters = TestParameters(),
                hide_plot: bool = False,
                demonstration_save_path: Optional[str] = None,
-               model_type_str: Optional[str] = None
+               model_type_str: Optional[str] = None,
+               verbose: int = 1,
                ) -> None:
     """Evaluate the model and show random examples."""
 
@@ -65,7 +66,7 @@ def test_model(base_model: Optional[str] = None,
     )
 
     # Determine performance
-    analytics.print_model_performance(test_parameters.num_samples)
+    analytics.print_model_performance(test_parameters.num_samples, verbose=verbose)
 
     # Show examples
     if demonstration_save_path is not None or not hide_plot:

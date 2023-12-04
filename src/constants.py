@@ -3,6 +3,9 @@ from torch import nn
 
 from utils.vecs import Vec3
 
+VERSION: str = '1.0.0'
+
+
 DEFAULT_MODEL: str = 'default_model'
 SAVED_MODELS_DIR: str = 'saved_models'
 

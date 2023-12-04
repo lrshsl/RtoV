@@ -19,7 +19,8 @@ def main() -> None:
                 learning_rate = args.learning_rate,
                 learning_momentum = args.learning_momentum),
             hide_plot = args.hide_plot,
-            model_save_name = args.model_save_path)
+            model_save_name = args.model_save_path,
+            verbose = args.verbose)
 
     # Test / evaluation mode
     elif args.mode == 'test':
@@ -29,10 +30,11 @@ def main() -> None:
             model_type_str = args.model_type,
             test_parameters = TestParameters(
                 num_workers = args.num_workers,
-                num_samples = args.samples_per_epoch,
+                num_samples = args.num_samples,
                 batch_size = args.batch_size),
             hide_plot=args.hide_plot,
-            demonstration_save_path = args.result_save_path)
+            demonstration_save_path = args.result_save_path,
+            verbose = args.verbose)
 
     # Conversion / execution mode
     elif args.mode == 'convert':
@@ -43,7 +45,7 @@ def main() -> None:
             output_format = args.output_format,
             model = args.model,
             model_type_str = args.model_type,
-        )
+            verbose = args.verbose)
 
 
 if __name__ == '__main__':
