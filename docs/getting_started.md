@@ -3,7 +3,7 @@
 
 ## Dependencies
 
-In order to use RtoV, a recent Python3 installation is required. It was tested and developed in a [https://www.python.org/downloads/release/python-3116/](Python 3.11.6) virtual environment on Linux.
+In order to use RtoV, a recent Python3 installation is required. It was tested and developed in a [Python 3.11.6](https://www.python.org/downloads/release/python-3116) virtual environment on Linux.
 To check if it is installed and on which version, type into a terminal `python3 --version`
 
 It is recommended to use a virtual environment with Python. One can be created using e. g. anaconda or with the following command, which should work on most platforms:
